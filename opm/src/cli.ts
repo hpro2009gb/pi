@@ -12,10 +12,16 @@ if (argv[0] === "init") {
 	process.exit(0);
 }
 
-const plan = resolveLaunchPlan(argv);
-const result = spawnPi(plan);
-if (result.error) {
-	process.stderr.write(`${result.error.message}\n`);
+try {
+	const plan = resolveLaunchPlan(argv);
+	const result = spawnPi(plan);
+	if (result.error) {
+		process.stderr.write(`${result.error.message}\n`);
+		process.exit(1);
+	}
+	process.exit(result.status ?? 1);
+} catch (error) {
+	const message = error instanceof Error ? error.message : String(error);
+	process.stderr.write(`${message}\n`);
 	process.exit(1);
 }
-process.exit(result.status ?? 1);
