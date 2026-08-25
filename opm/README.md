@@ -116,7 +116,7 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 | --- | --- | --- | --- | --- | --- | --- |
 | `claude-code` | Claude Code | Plan + hỏi + lint, không hashline | Pi + verify, ask, plan, lsp | ask, `/plan` (không auto-run), lsp TS/JS, verify | Permission từng tool, MCP, CLAUDE.md riêng, IDE | normal |
 | `amp` | Amp | Cùng gần Claude Code | Pi + verify, ask, plan, lsp | ask+plan+lsp | Amp source/repo map, IDE | normal |
-| `antigravity` | Antigravity | Nhiều bước nhưng vẫn plan/ask | Pi + verify, ask, plan, lsp, task, browser | ask+plan+lsp+task+browser snapshot | `computer` desktop, orchestration Antigravity | normal |
+| `antigravity` | Antigravity | Nhiều bước nhưng vẫn plan/ask | Pi + verify, ask, plan, lsp, task, browser | ask+plan+lsp+task fan-out+browser snapshot | `computer` desktop, orchestration Antigravity ngoài scout/worker | normal |
 | `cline` | Cline | Plan mặc định, Act sau accept | Pi + verify, ask, plan | `--plan` lúc start; confirm mới write | Browser, MCP, UI VS Code | `--plan` |
 | `kilo` | Kilo Code | Họ Cline | Pi + verify, ask, plan | như `cline` | UI/MCP marketplace Kilo | `--plan` |
 | `command-code` | Command Code | Họ plan/act | Pi + verify, ask, plan | như `cline` | Command palette/IDE | `--plan` |
@@ -137,7 +137,7 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 | `plan` | có | `/plan` (và `--plan`): lọc tool + bash allowlist; confirm mới bật write. | Không auto-execute. Cancel = vẫn plan mode. | Claude Code plan, Cline plan/act, Pi `plan-mode` example. |
 | `lsp` | có | Tool `lsp` + diagnostics sau `edit`/`write` TS/JS. | Thiếu `typescript-language-server`: báo lỗi, không crash. Lang khác: `unsupported in v1`. | omp LSP + hook `tool_result` của Pi. |
 | `sandbox` | có | Policy path/net; profile `off` / `workspace` / `container`. | Default `off`. workspace: ghi cwd/tmp, chặn ~/.ssh ~/.aws ~/.gnupg. container: thêm chặn curl/wget/ssh. Chưa phải VM. | Codex workspace + Pi sandbox/gondolin (VM để sau). |
-| `task` | có | Tool `task`: scout (read+bash) hoặc worker (đủ tool + verify). Isolated `--mode json -p`. | Worker không auto-commit. Scout không edit/write. | Pi subagent example + omp `task`. |
+| `task` | có | Tool `task`: scout (read+bash) hoặc worker (đủ tool + verify). Isolated `--mode json -p`. | Fan-out `tasks[]` (max 8, concurrency 4); `chain[]` với `{previous}`. Worker không auto-commit. Scout không edit/write. | Pi subagent example (single/parallel/chain) + omp `task`. |
 | `browser` | có | UI evidence: `snapshot` (`--dump-dom`) hoặc `screenshot`. | Cần Chrome/Chromium hoặc `OPM_CHROME_BIN`. Không có tool `computer`. Tắt trong `opm-verify` trừ `--with browser`. | Học browser CLI; bỏ desktop control. |
 
 ## Không lấy từ agent khác

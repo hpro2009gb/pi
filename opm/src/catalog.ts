@@ -137,8 +137,9 @@ export const PACK_CATALOG: Record<PackId, PackCatalogEntry> = {
 	},
 	task: {
 		what: "Tool `task`: subagent isolated (spawn Pi `--mode json -p`). scout = read+bash; worker = đủ tool + pack verify.",
-		special: "Worker không auto-commit. Scout không edit/write. Không port 31-tool omp. Cần model/API key như Pi.",
-		learnedFrom: "Pi `examples/extensions/subagent` + omp `task`. Không nhét subagent vào core Pi.",
+		special:
+			"Fan-out: `tasks[]` song song (max 8, concurrency 4). `chain[]` tuần tự, `{previous}` = stdout bước trước. Worker không auto-commit. Scout không edit/write.",
+		learnedFrom: "Pi `examples/extensions/subagent` (single/parallel/chain) + omp `task`. Không nhét subagent vào core Pi.",
 		available: true,
 	},
 	browser: {
@@ -176,8 +177,8 @@ export const AGENT_PROFILE_CATALOG: Record<AgentProfileId, AgentProfileCatalogEn
 	antigravity: agentProfile("antigravity", {
 		mimics: "Antigravity",
 		chooseWhen: "Muốn agent tự chạy nhiều bước nhưng vẫn có plan/ask",
-		closest: "verify, ask, plan, lsp, task, browser — hơn `claude-code` vì có task + UI snapshot.",
-		missing: "`computer` desktop, orchestration riêng của Antigravity. Browser pack chỉ snapshot/screenshot.",
+		closest: "verify, ask, plan, lsp, task, browser — hơn `claude-code` vì có task fan-out + UI snapshot.",
+		missing: "`computer` desktop, orchestration riêng của Antigravity ngoài scout/worker. Browser pack chỉ snapshot/screenshot.",
 		learnedFrom: "Antigravity (agent đa bước). OPM bắt lớp plan/ask + task scout/worker + browser evidence.",
 	}),
 	cline: agentProfile("cline", {
