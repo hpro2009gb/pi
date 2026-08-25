@@ -1,0 +1,11 @@
+{
+	"name": "opm",
+	"private": true,
+	"type": "module",
+	"bin": {
+		"opm": "./src/cli.ts"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	}
+}
