@@ -52,7 +52,22 @@ describe("chooser catalog", () => {
 		expect(text).toContain("custom");
 		expect(text).toMatch(/--with|--without/);
 		expect(text).toMatch(/Pi \+/);
-		expect(PRESET_CATALOG["pi-super"].packs).toEqual(["verify", "hashline", "ask", "plan", "lsp"]);
+		expect(PRESET_CATALOG["pi-super"].packs).toEqual([
+			"verify",
+			"hashline",
+			"ask",
+			"plan",
+			"lsp",
+			"sandbox",
+			"task",
+			"browser",
+		]);
+		expect(PRESET_CATALOG["opm-full"].packs).toEqual(PRESET_CATALOG["pi-super"].packs);
+		expect(PRESET_CATALOG["opm-full"].available).toBe(true);
+		expect(PACK_CATALOG.browser.available).toBe(true);
+		expect(text).not.toMatch(/browser chưa/);
+		expect(AGENT_PROFILE_CATALOG.antigravity.samePacksAs).toBeUndefined();
+		expect(AGENT_PROFILES.antigravity.packs).toEqual(["verify", "ask", "plan", "lsp", "task", "browser"]);
 		expect(PRESET_CATALOG.custom.packs).toEqual([]);
 	});
 });

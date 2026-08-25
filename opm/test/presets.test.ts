@@ -85,9 +85,21 @@ describe("resolveLaunchPlan", () => {
 		expect(plan.packs).toEqual(["verify", "hashline"]);
 	});
 
-	it("pi-super is the researched full v1 kit without forcing plan mode", () => {
+	it("pi-super is the researched full v1 kit without forcing plan or sandbox mode", () => {
 		const plan = resolveLaunchPlan(["--preset", "pi-super"]);
-		expect(plan.packs).toEqual(["verify", "hashline", "ask", "plan", "lsp"]);
+		expect(plan.packs).toEqual(["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"]);
+		expect(plan.extraArgs).toEqual([]);
+	});
+
+	it("opm-full matches pi-super packs and does not inject --plan or --sandbox", () => {
+		const plan = resolveLaunchPlan(["--preset", "opm-full"]);
+		expect(plan.packs).toEqual(PRESET_PACKS["pi-super"]);
+		expect(plan.extraArgs).toEqual([]);
+	});
+
+	it("profile antigravity includes task and browser", () => {
+		const plan = resolveLaunchPlan(["--profile", "antigravity"]);
+		expect(plan.packs).toEqual(["verify", "ask", "plan", "lsp", "task", "browser"]);
 		expect(plan.extraArgs).toEqual([]);
 	});
 

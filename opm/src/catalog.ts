@@ -68,21 +68,22 @@ export const PRESET_CATALOG: Record<PresetName, PresetCatalogEntry> = {
 		available: true,
 	},
 	"opm-full": {
-		chooseWhen: "Muốn sandbox + task + (browser khi có file)",
+		chooseWhen: "Muốn đủ pack: sandbox + task + browser",
 		packs: PRESET_PACKS["opm-full"],
-		what: "`opm-plan` cộng sandbox + task + browser (file thiếu thì skip, không crash).",
-		special: "sandbox và task đã có. browser chưa ship — skip file thiếu. Sandbox mặc định off trừ khi `--sandbox workspace|container`.",
+		what: "`opm-plan` cộng sandbox + task + browser.",
+		special:
+			"Sandbox mặc định off trừ khi `--sandbox workspace|container`. Browser: snapshot/screenshot Chrome headless, không `computer` desktop.",
 		learnedFrom: "Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp.",
-		available: false,
+		available: true,
 	},
 	"pi-super": {
 		chooseWhen: "Daily driver nghiên cứu của OPM: đủ kit v1, không khóa plan lúc start",
 		packs: PRESET_PACKS["pi-super"],
-		what: "Pi + verify + hashline + ask + plan + lsp. Combo này không clone một agent: Claude không có hashline; Cline không hashline/lsp; omp auto-commit; Codex không plan/ask.",
+		what: "Pi + verify + hashline + ask + plan + lsp + sandbox + task + browser. Combo này không clone một agent: Claude không có hashline; Cline không hashline/lsp; omp auto-commit; Codex không plan/ask.",
 		special:
-			"Không inject `--plan`. Dùng `/plan` khi cần. Có thể mạnh hơn clone vì ghép vài vũ khí mà từng agent kia không có cùng lúc, vẫn giữ Pi core.",
+			"Không inject `--plan`. Sandbox mặc định off. Dùng `/plan` khi cần. Browser chỉ snapshot/screenshot. Có thể mạnh hơn clone vì ghép vài vũ khí mà từng agent kia không có cùng lúc, vẫn giữ Pi core.",
 		learnedFrom:
-			"Tổng hợp có chủ đích: Pi 4-tool + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan-then-act (opt-in). Bỏ auto-commit, 31 tool, `computer`, MCP-in-core.",
+			"Tổng hợp có chủ đích: Pi 4-tool + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan-then-act (opt-in) + Codex sandbox policy + UI evidence. Bỏ auto-commit, 31 tool, `computer`, MCP-in-core.",
 		available: true,
 	},
 	custom: {
@@ -141,10 +142,11 @@ export const PACK_CATALOG: Record<PackId, PackCatalogEntry> = {
 		available: true,
 	},
 	browser: {
-		what: "UI evidence (browser), tắt mặc định trong `opm-verify`.",
-		special: "Chưa có trong v1. Cố ý không thêm `computer` (desktop control) của omp.",
-		learnedFrom: "Các agent UI-verify (omp browser/computer — chỉ học browser, bỏ desktop).",
-		available: false,
+		what: "UI evidence: snapshot (Chrome `--dump-dom`) hoặc screenshot (`--screenshot=`).",
+		special:
+			"Cần chrome/chromium trên PATH hoặc `OPM_CHROME_BIN`. Tắt mặc định trong `opm-verify` (`--with browser`). Không có tool `computer` (desktop OS).",
+		learnedFrom: "Các agent UI-verify (omp browser/computer — chỉ học browser CLI, bỏ desktop).",
+		available: true,
 	},
 };
 
@@ -174,10 +176,9 @@ export const AGENT_PROFILE_CATALOG: Record<AgentProfileId, AgentProfileCatalogEn
 	antigravity: agentProfile("antigravity", {
 		mimics: "Antigravity",
 		chooseWhen: "Muốn agent tự chạy nhiều bước nhưng vẫn có plan/ask",
-		closest: "Cùng pack với `claude-code` (ask+plan+lsp+verify).",
-		missing: "Browser/computer, task/subagent, orchestration riêng của Antigravity.",
-		learnedFrom: "Antigravity (agent đa bước). v1 chỉ bắt được lớp plan/ask, chưa fan-out.",
-		samePacksAs: "claude-code",
+		closest: "verify, ask, plan, lsp, task, browser — hơn `claude-code` vì có task + UI snapshot.",
+		missing: "`computer` desktop, orchestration riêng của Antigravity. Browser pack chỉ snapshot/screenshot.",
+		learnedFrom: "Antigravity (agent đa bước). OPM bắt lớp plan/ask + task scout/worker + browser evidence.",
 	}),
 	cline: agentProfile("cline", {
 		mimics: "Cline",

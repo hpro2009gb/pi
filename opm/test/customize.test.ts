@@ -40,6 +40,8 @@ describe("customize packs", () => {
 		expect(text).toMatch(/\[ \] hashline/);
 		expect(text).toMatch(/\[x\] ask/);
 		expect(text).toMatch(/\[ \] plan/);
+		expect(text).toMatch(/\[ \] browser/);
+		expect(text).not.toMatch(/chưa v1/);
 	});
 
 	it("parses --from and leaves toggles for resolveLaunchPlan", () => {

@@ -33,14 +33,14 @@ export const PRESET_PACKS: Record<PresetName, PackId[]> = {
 	"opm-verify": ["verify", "hashline", "ask", "lsp"],
 	"opm-plan": ["verify", "hashline", "ask", "plan", "lsp"],
 	"opm-full": ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"],
-	"pi-super": ["verify", "hashline", "ask", "plan", "lsp"],
+	"pi-super": ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"],
 	custom: [],
 };
 
 export const AGENT_PROFILES: Record<AgentProfileId, AgentProfileDef> = {
 	"claude-code": { packs: ["verify", "ask", "plan", "lsp"], startInPlan: false },
 	amp: { packs: ["verify", "ask", "plan", "lsp"], startInPlan: false },
-	antigravity: { packs: ["verify", "ask", "plan", "lsp"], startInPlan: false },
+	antigravity: { packs: ["verify", "ask", "plan", "lsp", "task", "browser"], startInPlan: false },
 	cline: { packs: ["verify", "ask", "plan"], startInPlan: true },
 	kilo: { packs: ["verify", "ask", "plan"], startInPlan: true },
 	"command-code": { packs: ["verify", "ask", "plan"], startInPlan: true },
