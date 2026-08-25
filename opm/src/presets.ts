@@ -1,30 +1,41 @@
-import { extensionPathsForPreset, type PresetName } from "./pack-registry.ts";
+import {
+	extensionPathsForLaunch,
+	isLaunchName,
+	startLaunchInPlan,
+	type LaunchName,
+	type PresetName,
+} from "./pack-registry.ts";
 
-export type { PresetName };
+export type { LaunchName, PresetName };
 
 export type LaunchPlan = {
-	preset: PresetName;
+	preset: LaunchName;
 	extensionPaths: string[];
 	extraArgs: string[];
 };
 
-const PRESET_FLAG = "--preset";
+const NAME_FLAGS = new Set(["--preset", "--profile"]);
+
+function parseLaunchName(value: string | undefined): LaunchName {
+	if (value && isLaunchName(value)) {
+		return value;
+	}
+	throw new Error(`Unknown preset or profile: ${value ?? "(missing)"}`);
+}
 
 export function resolveLaunchPlan(argv: string[]): LaunchPlan {
 	const extraArgs: string[] = [];
-	let preset: PresetName = "opm-verify";
+	let preset: LaunchName = "opm-verify";
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i]!;
-		if (arg === PRESET_FLAG) {
-			const value = argv[++i];
-			if (value === "pi" || value === "opm-verify" || value === "opm-plan" || value === "opm-full") {
-				preset = value;
-			} else {
-				throw new Error(`Unknown preset: ${value ?? "(missing)"}`);
-			}
+		if (NAME_FLAGS.has(arg)) {
+			preset = parseLaunchName(argv[++i]);
 			continue;
 		}
 		extraArgs.push(arg);
 	}
-	return { preset, extraArgs, extensionPaths: extensionPathsForPreset(preset) };
+	if (startLaunchInPlan(preset) && !extraArgs.includes("--plan")) {
+		extraArgs.unshift("--plan");
+	}
+	return { preset, extraArgs, extensionPaths: extensionPathsForLaunch(preset) };
 }

@@ -34,7 +34,29 @@ describe("resolveLaunchPlan", () => {
 	});
 
 	it("unknown preset throws", () => {
-		expect(() => resolveLaunchPlan(["--preset", "omp"])).toThrow(/Unknown preset: omp/);
+		expect(() => resolveLaunchPlan(["--preset", "omp"])).toThrow(/Unknown preset or profile: omp/);
+	});
+
+	it("profile claude-code loads ask+plan+lsp without hashline", () => {
+		const plan = resolveLaunchPlan(["--profile", "claude-code", "-p", "hello"]);
+		expect(plan.preset).toBe("claude-code");
+		expect(plan.extraArgs).toEqual(["-p", "hello"]);
+		const paths = plan.extensionPaths.map((p) => p.replaceAll("\\", "/"));
+		expect(paths.some((p) => p.endsWith("packs/ask/index.ts"))).toBe(true);
+		expect(paths.some((p) => p.endsWith("packs/plan/index.ts"))).toBe(true);
+		expect(paths.some((p) => p.endsWith("packs/lsp/index.ts"))).toBe(true);
+		expect(paths.some((p) => p.endsWith("packs/hashline/index.ts"))).toBe(false);
+	});
+
+	it("profile cline starts in plan mode", () => {
+		const plan = resolveLaunchPlan(["--profile", "cline"]);
+		expect(plan.preset).toBe("cline");
+		expect(plan.extraArgs).toEqual(["--plan"]);
+	});
+
+	it("profile cline does not duplicate --plan", () => {
+		const plan = resolveLaunchPlan(["--profile", "cline", "--plan"]);
+		expect(plan.extraArgs).toEqual(["--plan"]);
 	});
 });
 

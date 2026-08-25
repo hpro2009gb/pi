@@ -30,8 +30,12 @@ OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi -p "list files"
 # Init thư mục config riêng (không ghi đè ~/.pi/agent/settings.json)
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts init
 
-# Bảng chọn preset/pack + nguồn triết lý
+# Bảng chọn preset/pack + profile phỏng theo agent
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose
+
+# Profile phỏng theo Claude Code / Cline
+OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile claude-code
+OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile cline
 ```
 
 `OPM_PI_FROM_SOURCE=1` dùng `./pi-test.sh`. Muốn binary khác: `OPM_PI_BIN=/path/to/pi`.
@@ -58,6 +62,27 @@ In lại bảng này: `OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose`.
 | `opm-full` (phase 2) | Khi pack phase 2 đã có trên máy | + sandbox, task, browser | Union; file thiếu thì skip. | v1 chưa ship 3 pack sau. Đừng chọn nếu cần sandbox/subagent/browser ngay. | Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp. |
 
 Tắt hashline: `OPM_HASHLINE=0`.
+
+`--preset` và `--profile` cùng parser: `opm --profile cline` = `opm --preset cline`.
+
+## Profile phỏng theo agent
+
+Không biến Pi thành agent kia. Chỉ bật pack gần nhất. Cột “Còn thiếu” là phần không giả lập.
+
+| Chọn profile | Phỏng theo | Dùng khi | Packs trên Pi | Gần giống ở | Còn thiếu | Bắt đầu |
+| --- | --- | --- | --- | --- | --- | --- |
+| `claude-code` | Claude Code | Plan + hỏi + lint, không hashline | verify, ask, plan, lsp | ask, `/plan` (không auto-run), lsp TS/JS, verify | Permission từng tool, MCP, CLAUDE.md riêng, IDE | normal |
+| `amp` | Amp | Cùng gần Claude Code | (cùng `claude-code`) | ask+plan+lsp | Amp source/repo map, IDE | normal |
+| `antigravity` | Antigravity | Nhiều bước nhưng vẫn plan/ask | (cùng `claude-code`) | ask+plan+lsp | Browser, task/subagent, orchestration | normal |
+| `cline` | Cline | Plan mặc định, Act sau accept | verify, ask, plan | `--plan` lúc start; confirm mới write | Browser, MCP, UI VS Code | `--plan` |
+| `kilo` | Kilo Code | Họ Cline | (cùng `cline`) | như `cline` | UI/MCP marketplace Kilo | `--plan` |
+| `command-code` | Command Code | Họ plan/act | (cùng `cline`) | như `cline` | Command palette/IDE | `--plan` |
+| `opencode` | OpenCode | TUI, hỏi khi cần, không khóa plan | verify, ask, lsp | Pi TUI + ask/lsp/verify | Session/share, plugin marketplace | normal |
+| `copilot` | GitHub Copilot Agent | Agent + lint + hỏi | (cùng `opencode`) | ask+lsp+verify | GitHub PR agent, inline IDE | normal |
+| `codex` | Codex | Ít nghi lễ; sandbox chưa có | verify | Evidence, không commit hộ | **Sandbox** (phase 2) — khoảng cách lớn nhất | normal |
+| `oh-my-pi` | Oh My Pi (`omp`) | Batteries: hashline+lsp+ask+plan | verify, hashline, ask, lsp, plan | Cùng pack `opm-plan`; vẫn chặn auto-commit | 31 tool, `computer`, Rust, MCP-in-core, `/collab`. Lệnh `omp` ≠ profile này | normal |
+| `cursor` | Cursor Agent | Edit neo + diagnostics + hỏi | verify, hashline, ask, lsp | Cùng pack `opm-verify` | IDE, Composer, Tab, cloud agent | normal |
+| `aider` | Aider | Sửa neo, git do user | verify, hashline, ask | hashline + ask; không auto-commit | Repo map, conventional commit mặc định của Aider | normal |
 
 ## Bảng chọn pack
 

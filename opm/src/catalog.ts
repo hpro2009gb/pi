@@ -1,4 +1,4 @@
-import { PRESET_PACKS, type PackId, type PresetName } from "./pack-registry.ts";
+import { AGENT_PROFILES, PRESET_PACKS, type AgentProfileId, type PackId, type PresetName } from "./pack-registry.ts";
 
 export type ProductBlurb = {
 	what: string;
@@ -20,6 +20,16 @@ export type PackCatalogEntry = {
 	special: string;
 	learnedFrom: string;
 	available: boolean;
+};
+
+export type AgentProfileCatalogEntry = {
+	mimics: string;
+	chooseWhen: string;
+	closest: string;
+	missing: string;
+	learnedFrom: string;
+	samePacksAs?: AgentProfileId | PresetName;
+	startInPlan: boolean;
 };
 
 export const OPM_PRODUCT: ProductBlurb = {
@@ -118,6 +128,107 @@ export const PACK_CATALOG: Record<PackId, PackCatalogEntry> = {
 	},
 };
 
+function agentProfile(
+	id: AgentProfileId,
+	fields: Omit<AgentProfileCatalogEntry, "startInPlan">,
+): AgentProfileCatalogEntry {
+	return { ...fields, startInPlan: AGENT_PROFILES[id].startInPlan };
+}
+
+export const AGENT_PROFILE_CATALOG: Record<AgentProfileId, AgentProfileCatalogEntry> = {
+	"claude-code": agentProfile("claude-code", {
+		mimics: "Claude Code",
+		chooseWhen: "Muốn plan + hỏi user + lint, không hashline",
+		closest: "ask, /plan (không auto-run), lsp TS/JS, verify (không commit hộ).",
+		missing: "Permission prompt từng tool, MCP, CLAUDE.md riêng, subagent team, IDE.",
+		learnedFrom: "Claude Code: AskUserQuestion, plan mode, cẩn thận khi sửa. Engine vẫn là Pi.",
+	}),
+	amp: agentProfile("amp", {
+		mimics: "Amp",
+		chooseWhen: "Cùng gần với Claude Code (plan + ask + lsp)",
+		closest: "Cùng pack với `claude-code`.",
+		missing: "Amp source/repo map, team runner, IDE.",
+		learnedFrom: "Amp (phong cách agent plan/ask). Cùng pack `claude-code`.",
+		samePacksAs: "claude-code",
+	}),
+	antigravity: agentProfile("antigravity", {
+		mimics: "Antigravity",
+		chooseWhen: "Muốn agent tự chạy nhiều bước nhưng vẫn có plan/ask",
+		closest: "Cùng pack với `claude-code` (ask+plan+lsp+verify).",
+		missing: "Browser/computer, task/subagent, orchestration riêng của Antigravity.",
+		learnedFrom: "Antigravity (agent đa bước). v1 chỉ bắt được lớp plan/ask, chưa fan-out.",
+		samePacksAs: "claude-code",
+	}),
+	cline: agentProfile("cline", {
+		mimics: "Cline",
+		chooseWhen: "Plan mode mặc định, Act sau khi accept",
+		closest: "Khởi động `--plan`; ask; verify. Không hashline/lsp (Cline không lấy đó làm xương sống).",
+		missing: "Browser, MCP, checkpoint/diff UI của VS Code, auto-switch Plan/Act trong IDE.",
+		learnedFrom: "Cline: Plan rồi Act, user duyệt. OPM confirm mới bật write, không tự execute.",
+	}),
+	kilo: agentProfile("kilo", {
+		mimics: "Kilo Code",
+		chooseWhen: "Cùng họ Cline (plan/act trên VS Code)",
+		closest: "Cùng pack và `--plan` với `cline`.",
+		missing: "UI Kilo, MCP marketplace, mode riêng của Kilo.",
+		learnedFrom: "Kilo Code (họ Cline). Cùng pack `cline`.",
+		samePacksAs: "cline",
+	}),
+	"command-code": agentProfile("command-code", {
+		mimics: "Command Code",
+		chooseWhen: "Cùng họ Cline/plan-act",
+		closest: "Cùng pack và `--plan` với `cline`.",
+		missing: "Command palette/IDE integration của Command Code.",
+		learnedFrom: "Command Code (họ plan/act). Cùng pack `cline`.",
+		samePacksAs: "cline",
+	}),
+	opencode: agentProfile("opencode", {
+		mimics: "OpenCode",
+		chooseWhen: "TUI agent, hỏi khi cần, không khóa plan lúc start",
+		closest: "verify + ask + lsp. Giống Pi+TUI hơn Cline.",
+		missing: "OpenCode session/share, provider UX, plugin marketplace.",
+		learnedFrom: "OpenCode: TUI-first, tool-using. Pi đã là TUI; pack chỉ thêm ask/lsp/verify.",
+	}),
+	copilot: agentProfile("copilot", {
+		mimics: "GitHub Copilot Agent",
+		chooseWhen: "Agent + lint + hỏi, không plan-gate",
+		closest: "Cùng pack với `opencode` (verify, ask, lsp).",
+		missing: "GitHub PR agent, Copilot Workspace, IDE inline, MCP GitHub.",
+		learnedFrom: "Copilot Agent (sửa code + kiểm tra). Không giả lập GitHub-hosted runner.",
+		samePacksAs: "opencode",
+	}),
+	codex: agentProfile("codex", {
+		mimics: "Codex (OpenAI)",
+		chooseWhen: "Ít nghi lễ, làm trong phạm vi an toàn — sandbox chưa có",
+		closest: "Chỉ pack verify (evidence, không commit hộ). 4 tool Pi.",
+		missing: "Sandbox workspace/container (pack sandbox phase 2) — đây là phần Codex khác Pi nhất.",
+		learnedFrom: "Codex: chạy trong workspace sandbox, ít hỏi. v1 chưa sandbox nên đây là profile yếu nhất về độ giống.",
+	}),
+	"oh-my-pi": agentProfile("oh-my-pi", {
+		mimics: "Oh My Pi (omp)",
+		chooseWhen: "Muốn batteries Pi: hashline + lsp + ask + plan",
+		closest: "Cùng pack với `opm-plan`. Vẫn bật verify (không bắt chước auto-commit của omp).",
+		missing: "31 tool, `computer` desktop, Rust native, MCP-in-core, `/collab`, auto `learn`. Lệnh `omp` không phải profile này.",
+		learnedFrom: "omp: hashline, LSP, nhiều tool. OPM chỉ lấy phần gắn được bằng pack, giữ Pi core.",
+		samePacksAs: "opm-plan",
+	}),
+	cursor: agentProfile("cursor", {
+		mimics: "Cursor Agent",
+		chooseWhen: "Edit chính xác + diagnostics + hỏi; không plan mặc định",
+		closest: "Cùng pack với `opm-verify` (verify, hashline, ask, lsp).",
+		missing: "IDE, Composer, Tab, repo index, multi-file apply UI, cloud agent.",
+		learnedFrom: "Cursor: lints sau edit, hỏi khi thiếu context, sửa neo. TUI Pi không thay IDE.",
+		samePacksAs: "opm-verify",
+	}),
+	aider: agentProfile("aider", {
+		mimics: "Aider",
+		chooseWhen: "Sửa file theo neo, hỏi khi cần, git do user quyết",
+		closest: "hashline + ask + verify. Không lsp, không plan-gate.",
+		missing: "Repo map, auto conventional commit, watch files, aider architect mode.",
+		learnedFrom: "Aider: edit có chủ đích trên git repo. OPM không auto-commit (ngược aider mặc định).",
+	}),
+};
+
 function markdownTable(headers: string[], rows: string[][]): string {
 	const line = (cells: string[]): string => `| ${cells.join(" | ")} |`;
 	return [line(headers), line(headers.map(() => "---")), ...rows.map(line)].join("\n");
@@ -151,10 +262,29 @@ export function formatChooser(): string {
 		}),
 	);
 
+	const profiles = markdownTable(
+		["Chọn profile", "Phỏng theo", "Dùng khi", "Packs trên Pi", "Gần giống ở", "Còn thiếu", "Bắt đầu"],
+		(Object.keys(AGENT_PROFILE_CATALOG) as AgentProfileId[]).map((id) => {
+			const entry = AGENT_PROFILE_CATALOG[id];
+			const packList = AGENT_PROFILES[id].packs.join(", ");
+			return [
+				id,
+				entry.mimics,
+				entry.chooseWhen,
+				packList,
+				entry.closest,
+				entry.missing,
+				entry.startInPlan ? "--plan" : "normal",
+			];
+		}),
+	);
+
 	return [
 		"# OPM — bảng chọn",
 		"",
-		"Lệnh: `opm choose`. Chạy: `opm --preset <tên>`.",
+		"Lệnh: `opm choose`. Preset OPM: `opm --preset <tên>`. Profile agent: `opm --profile <tên>` (`--preset` cũng nhận tên profile).",
+		"",
+		"Profile **không** biến Pi thành Claude Code/Cline/omp. Nó chỉ bật pack gần nhất; cột “Còn thiếu” là phần không giả lập được.",
 		"",
 		"## Tích hợp OPM",
 		"",
@@ -163,6 +293,10 @@ export function formatChooser(): string {
 		"## Chọn preset",
 		"",
 		presets,
+		"",
+		"## Profile phỏng theo agent",
+		"",
+		profiles,
 		"",
 		"## Chọn pack (bên trong preset)",
 		"",
