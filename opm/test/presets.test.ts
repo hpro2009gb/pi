@@ -27,10 +27,12 @@ describe("resolveLaunchPlan", () => {
 		]);
 	});
 
-	it("opm-plan includes the plan pack after verify packs", () => {
+	it("opm-plan includes the plan pack", () => {
 		const plan = resolveLaunchPlan(["--preset", "opm-plan"]);
-		expect(PRESET_PACKS["opm-plan"]).toEqual(["verify", "hashline", "ask", "lsp", "plan"]);
-		expect(plan.extensionPaths.at(-1)?.replaceAll("\\", "/")).toMatch(/packs\/plan\/index\.ts$/);
+		expect(PRESET_PACKS["opm-plan"]).toEqual(["verify", "hashline", "ask", "plan", "lsp"]);
+		expect(plan.packs).toEqual(["verify", "hashline", "ask", "plan", "lsp"]);
+		const paths = plan.extensionPaths.map((p) => p.replaceAll("\\", "/"));
+		expect(paths.some((p) => p.endsWith("packs/plan/index.ts"))).toBe(true);
 	});
 
 	it("unknown preset throws", () => {
@@ -57,6 +59,46 @@ describe("resolveLaunchPlan", () => {
 	it("profile cline does not duplicate --plan", () => {
 		const plan = resolveLaunchPlan(["--profile", "cline", "--plan"]);
 		expect(plan.extraArgs).toEqual(["--plan"]);
+	});
+
+	it("toggles packs on a suggested profile with --with and --without", () => {
+		const plan = resolveLaunchPlan(["--profile", "claude-code", "--with", "hashline", "--without", "lsp"]);
+		expect(plan.packs).toEqual(["verify", "hashline", "ask", "plan"]);
+		const paths = plan.extensionPaths.map((p) => p.replaceAll("\\", "/"));
+		expect(paths.some((p) => p.endsWith("packs/hashline/index.ts"))).toBe(true);
+		expect(paths.some((p) => p.endsWith("packs/lsp/index.ts"))).toBe(false);
+	});
+
+	it("custom requires --with or saved packs", () => {
+		expect(() => resolveLaunchPlan(["--profile", "custom"])).toThrow(/custom requires --with/);
+	});
+
+	it("custom builds a pack list from --with", () => {
+		const plan = resolveLaunchPlan(["--preset", "custom", "--with", "verify,ask"]);
+		expect(plan.preset).toBe("custom");
+		expect(plan.packs).toEqual(["verify", "ask"]);
+		expect(plan.extraArgs).toEqual([]);
+	});
+
+	it("custom uses saved packs when --with is omitted", () => {
+		const plan = resolveLaunchPlan(["--profile", "custom"], { savedCustomPacks: ["verify", "hashline"] });
+		expect(plan.packs).toEqual(["verify", "hashline"]);
+	});
+
+	it("pi-super is the researched full v1 kit without forcing plan mode", () => {
+		const plan = resolveLaunchPlan(["--preset", "pi-super"]);
+		expect(plan.packs).toEqual(["verify", "hashline", "ask", "plan", "lsp"]);
+		expect(plan.extraArgs).toEqual([]);
+	});
+
+	it("cline without plan pack does not inject --plan", () => {
+		const plan = resolveLaunchPlan(["--profile", "cline", "--without", "plan"]);
+		expect(plan.packs).toEqual(["verify", "ask"]);
+		expect(plan.extraArgs).toEqual([]);
+	});
+
+	it("unknown pack in --with throws", () => {
+		expect(() => resolveLaunchPlan(["--with", "laser"])).toThrow(/Unknown pack: laser/);
 	});
 });
 

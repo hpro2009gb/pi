@@ -48,6 +48,11 @@ describe("chooser catalog", () => {
 		expect(AGENT_PROFILE_CATALOG.cline.startInPlan).toBe(true);
 		expect(AGENT_PROFILE_CATALOG["claude-code"].startInPlan).toBe(false);
 		expect(AGENT_PROFILE_CATALOG.codex.missing.toLowerCase()).toMatch(/sandbox/);
-		expect(AGENT_PROFILE_CATALOG["oh-my-pi"].missing.toLowerCase()).toMatch(/31|computer/);
+		expect(text).toContain("pi-super");
+		expect(text).toContain("custom");
+		expect(text).toMatch(/--with|--without/);
+		expect(text).toMatch(/Pi \+/);
+		expect(PRESET_CATALOG["pi-super"].packs).toEqual(["verify", "hashline", "ask", "plan", "lsp"]);
+		expect(PRESET_CATALOG.custom.packs).toEqual([]);
 	});
 });

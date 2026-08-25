@@ -75,6 +75,25 @@ export const PRESET_CATALOG: Record<PresetName, PresetCatalogEntry> = {
 		learnedFrom: "Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp.",
 		available: false,
 	},
+	"pi-super": {
+		chooseWhen: "Daily driver nghiên cứu của OPM: đủ kit v1, không khóa plan lúc start",
+		packs: PRESET_PACKS["pi-super"],
+		what: "Pi + verify + hashline + ask + plan + lsp. Combo này không clone một agent: Claude không có hashline; Cline không hashline/lsp; omp auto-commit; Codex không plan/ask.",
+		special:
+			"Không inject `--plan`. Dùng `/plan` khi cần. Có thể mạnh hơn clone vì ghép vài vũ khí mà từng agent kia không có cùng lúc, vẫn giữ Pi core.",
+		learnedFrom:
+			"Tổng hợp có chủ đích: Pi 4-tool + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan-then-act (opt-in). Bỏ auto-commit, 31 tool, `computer`, MCP-in-core.",
+		available: true,
+	},
+	custom: {
+		chooseWhen: "Tự tích chọn vũ khí (pack) — không theo gợi ý có sẵn",
+		packs: PRESET_PACKS.custom,
+		what: "Danh sách pack user chọn. Trống đến khi `--with` hoặc file `~/.opm/agent/custom-packs.json`.",
+		special:
+			"`opm customize --from claude-code --with hashline --without lsp` lưu combo. Chạy: `opm --profile custom`.",
+		learnedFrom: "User tùy biến. Profile agent chỉ là gợi ý để hiểu Pi + packs ≈ agent thật, rồi tự chỉnh.",
+		available: true,
+	},
 };
 
 export const PACK_CATALOG: Record<PackId, PackCatalogEntry> = {
@@ -234,6 +253,13 @@ function markdownTable(headers: string[], rows: string[][]): string {
 	return [line(headers), line(headers.map(() => "---")), ...rows.map(line)].join("\n");
 }
 
+export function piPlusLabel(packs: readonly PackId[]): string {
+	if (packs.length === 0) {
+		return "Pi";
+	}
+	return `Pi + ${packs.join(", ")}`;
+}
+
 export function formatChooser(): string {
 	const product = markdownTable(
 		["Câu hỏi", "Trả lời"],
@@ -248,7 +274,7 @@ export function formatChooser(): string {
 		["Chọn preset", "Dùng khi", "Packs", "Tính năng", "Đặc biệt", "Học từ"],
 		(Object.keys(PRESET_CATALOG) as PresetName[]).map((id) => {
 			const entry = PRESET_CATALOG[id];
-			const packs = entry.packs.length === 0 ? "(không)" : entry.packs.join(", ");
+			const packs = id === "custom" ? "(tự chọn)" : piPlusLabel(entry.packs);
 			const status = entry.available ? id : `${id} (phase 2)`;
 			return [status, entry.chooseWhen, packs, entry.what, entry.special, entry.learnedFrom];
 		}),
@@ -263,15 +289,14 @@ export function formatChooser(): string {
 	);
 
 	const profiles = markdownTable(
-		["Chọn profile", "Phỏng theo", "Dùng khi", "Packs trên Pi", "Gần giống ở", "Còn thiếu", "Bắt đầu"],
+		["Chọn profile", "Phỏng theo", "Dùng khi", "Gợi ý combo", "Gần giống ở", "Còn thiếu", "Bắt đầu"],
 		(Object.keys(AGENT_PROFILE_CATALOG) as AgentProfileId[]).map((id) => {
 			const entry = AGENT_PROFILE_CATALOG[id];
-			const packList = AGENT_PROFILES[id].packs.join(", ");
 			return [
 				id,
 				entry.mimics,
 				entry.chooseWhen,
-				packList,
+				piPlusLabel(AGENT_PROFILES[id].packs),
 				entry.closest,
 				entry.missing,
 				entry.startInPlan ? "--plan" : "normal",
@@ -282,9 +307,16 @@ export function formatChooser(): string {
 	return [
 		"# OPM — bảng chọn",
 		"",
-		"Lệnh: `opm choose`. Preset OPM: `opm --preset <tên>`. Profile agent: `opm --profile <tên>` (`--preset` cũng nhận tên profile).",
+		"Lệnh: `opm choose`. Preset: `opm --preset <tên>`. Profile: `opm --profile <tên>` (`--preset` cũng nhận tên profile).",
 		"",
-		"Profile **không** biến Pi thành Claude Code/Cline/omp. Nó chỉ bật pack gần nhất; cột “Còn thiếu” là phần không giả lập được.",
+		"Mỗi profile là **gợi ý combo**: Pi + packs ≈ agent thật (hoặc mạnh hơn ở vài vũ khí). Cột “Còn thiếu” là phần không giả lập. User tích/bỏ pack trên mọi combo:",
+		"",
+		"- `--with hashline,ask` / `--enable` — bật pack",
+		"- `--without lsp,plan` / `--disable` — tắt pack",
+		"- `opm customize --from claude-code --with hashline --without lsp` — lưu combo riêng",
+		"- `opm --profile custom` — chạy combo đã lưu (hoặc `--with` ngay trên CLI)",
+		"",
+		"`pi-super` là combo OPM nghiên cứu (đủ kit v1, không khóa plan). Không phải clone Claude/Cline/omp.",
 		"",
 		"## Tích hợp OPM",
 		"",
@@ -294,11 +326,11 @@ export function formatChooser(): string {
 		"",
 		presets,
 		"",
-		"## Profile phỏng theo agent",
+		"## Profile phỏng theo agent (gợi ý — có thể --with / --without)",
 		"",
 		profiles,
 		"",
-		"## Chọn pack (bên trong preset)",
+		"## Chọn pack (vũ khí — tích hoặc bỏ)",
 		"",
 		packs,
 		"",
