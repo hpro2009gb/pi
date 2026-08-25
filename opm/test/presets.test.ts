@@ -18,6 +18,8 @@ describe("resolveLaunchPlan", () => {
 
 	it("opm-verify computes four pack paths even if files are missing", () => {
 		const plan = resolveLaunchPlan(["--preset", "opm-verify"]);
+		expect(plan.packs).not.toContain("ttsr");
+		expect(plan.packs).not.toContain("memory");
 		expect(plan.extensionPaths).toHaveLength(4);
 		expect(plan.extensionPaths.map((p) => p.replaceAll("\\", "/"))).toEqual([
 			expect.stringMatching(/packs\/verify\/index\.ts$/),
@@ -87,8 +89,25 @@ describe("resolveLaunchPlan", () => {
 
 	it("pi-super is the researched full v1 kit without forcing plan or sandbox mode", () => {
 		const plan = resolveLaunchPlan(["--preset", "pi-super"]);
-		expect(plan.packs).toEqual(["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"]);
+		expect(plan.packs).toEqual([
+			"verify",
+			"hashline",
+			"ask",
+			"plan",
+			"lsp",
+			"sandbox",
+			"task",
+			"browser",
+			"ttsr",
+			"memory",
+		]);
 		expect(plan.extraArgs).toEqual([]);
+	});
+
+	it("pi-super can drop ttsr with --without", () => {
+		const plan = resolveLaunchPlan(["--preset", "pi-super", "--without", "ttsr"]);
+		expect(plan.packs).not.toContain("ttsr");
+		expect(plan.packs).toContain("memory");
 	});
 
 	it("opm-full matches pi-super packs and does not inject --plan or --sandbox", () => {

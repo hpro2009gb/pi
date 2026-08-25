@@ -61,7 +61,13 @@ describe("chooser catalog", () => {
 			"sandbox",
 			"task",
 			"browser",
+			"ttsr",
+			"memory",
 		]);
+		expect(PACK_CATALOG.ttsr.available).toBe(true);
+		expect(PACK_CATALOG.memory.available).toBe(true);
+		expect(text).toMatch(/TTSR/);
+		expect(text).toMatch(/MEMORY\.md/);
 		expect(PRESET_CATALOG["opm-full"].packs).toEqual(PRESET_CATALOG["pi-super"].packs);
 		expect(PRESET_CATALOG["opm-full"].available).toBe(true);
 		expect(PACK_CATALOG.browser.available).toBe(true);

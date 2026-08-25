@@ -19,9 +19,30 @@ export type AgentProfileId =
 
 export type LaunchName = PresetName | AgentProfileId;
 
-export type PackId = "verify" | "hashline" | "ask" | "plan" | "lsp" | "sandbox" | "task" | "browser";
+export type PackId =
+	| "verify"
+	| "hashline"
+	| "ask"
+	| "plan"
+	| "lsp"
+	| "sandbox"
+	| "task"
+	| "browser"
+	| "ttsr"
+	| "memory";
 
-export const PACK_ORDER: PackId[] = ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"];
+export const PACK_ORDER: PackId[] = [
+	"verify",
+	"hashline",
+	"ask",
+	"plan",
+	"lsp",
+	"sandbox",
+	"task",
+	"browser",
+	"ttsr",
+	"memory",
+];
 
 export type AgentProfileDef = {
 	packs: PackId[];
@@ -32,8 +53,8 @@ export const PRESET_PACKS: Record<PresetName, PackId[]> = {
 	pi: [],
 	"opm-verify": ["verify", "hashline", "ask", "lsp"],
 	"opm-plan": ["verify", "hashline", "ask", "plan", "lsp"],
-	"opm-full": ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"],
-	"pi-super": ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"],
+	"opm-full": ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser", "ttsr", "memory"],
+	"pi-super": ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser", "ttsr", "memory"],
 	custom: [],
 };
 

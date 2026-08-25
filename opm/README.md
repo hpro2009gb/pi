@@ -40,6 +40,9 @@ OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile claude-code --with hashline -
 # PI SUPER (combo nghiên cứu của OPM — đủ pack v1, không khóa plan)
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi-super
 
+# Tắt TTSR-lite trên combo đủ pack (abort+followUp có thể làm hỏng một số model)
+OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi-super --without ttsr
+
 # Browser evidence trên combo bất kỳ (cần Chrome/Chromium trên PATH)
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi --with browser
 
@@ -76,8 +79,8 @@ In lại bảng này: `OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose`.
 | `pi` | Muốn đúng Pi gốc, hoặc đang debug pack | Pi | Không load pack. Model chỉ thấy `read`, `bash`, `edit`, `write` (edit `oldText` của Pi). | Baseline. Dùng để so sánh: mọi thứ khác là pack, không phải core. | Pi — harness nhỏ, user-permission, không permission-popup hay plan mode trong core. |
 | `opm-verify` (mặc định) | Làm việc hằng ngày | Pi + verify, hashline, ask, lsp | Bốn tool Pi + `ask` + `lsp`; edit/read hashline. | Chặn `git commit`/`push`/`reset --hard` trừ khi user hỏi; hỏi select/confirm; LSP TS/JS nếu có server. | Kỷ luật OPM (evidence, không commit lén) + omp (hashline/LSP) + Claude Code / Pi `question.ts` (ask). |
 | `opm-plan` | Cần thiết kế trước, chưa cho agent sửa file | Pi + verify, hashline, ask, plan, lsp | `/plan`; write/edit tắt đến khi accept. | Bash allowlist; confirm mới được viết; Cancel giữ plan mode; không tự execute. | Claude Code plan, Cline plan-then-act, Pi `plan-mode`. Khác example Pi: không auto-run. |
-| `opm-full` | Muốn đủ pack: sandbox + task + browser | Pi + verify, hashline, ask, plan, lsp, sandbox, task, browser | Union của mọi pack đã ship. | Sandbox mặc định off. Browser: snapshot/screenshot, không `computer`. | Codex + Pi sandbox; Pi subagent / omp `task`; Chrome CLI evidence. |
-| `pi-super` | Daily driver nghiên cứu của OPM | Pi + verify, hashline, ask, plan, lsp, sandbox, task, browser | Đủ pack v1; `/plan` khi cần, không khóa lúc start. | Không clone Claude/Cline/omp. Không inject `--plan`/`--sandbox`. | Pi + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan opt-in + Codex sandbox policy + browser. |
+| `opm-full` | Muốn đủ pack: sandbox + task + browser + ttsr + memory | Pi + verify, hashline, ask, plan, lsp, sandbox, task, browser, ttsr, memory | Union của mọi pack đã ship. | Sandbox mặc định off. Browser: snapshot/screenshot, không `computer`. TTSR abort+followUp; MEMORY.md user-reviewed. | Codex + Pi sandbox; Pi subagent / omp `task`; Chrome CLI evidence; TTSR-lite; project memory. |
+| `pi-super` | Daily driver nghiên cứu của OPM | Pi + verify, hashline, ask, plan, lsp, sandbox, task, browser, ttsr, memory | Đủ pack v1; `/plan` khi cần, không khóa lúc start. | Không clone Claude/Cline/omp. Không inject `--plan`/`--sandbox`. TTSR on (tắt: `--without ttsr` / `OPM_TTSR=0`). | Pi + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan opt-in + Codex sandbox policy + browser + TTSR + MEMORY.md. |
 | `custom` | Tự tích vũ khí | (tự chọn) | Pack user chọn / file đã lưu. | `opm customize --from <profile> --with/--without`. | User tùy biến; profile agent chỉ là gợi ý. |
 
 Tắt hashline: `OPM_HASHLINE=0`.
@@ -95,7 +98,7 @@ Ví dụ: `opm --profile claude-code --with hashline --without lsp` = Pi + verif
 
 ## PI SUPER
 
-`pi-super` là combo OPM nghiên cứu, không clone một agent. Packs: verify, hashline, ask, plan, lsp, sandbox, task, browser. Không inject `--plan` lúc start (dùng `/plan` khi cần). Sandbox mặc định `off`.
+`pi-super` là combo OPM nghiên cứu, không clone một agent. Packs: verify, hashline, ask, plan, lsp, sandbox, task, browser, ttsr, memory. Không inject `--plan` lúc start (dùng `/plan` khi cần). Sandbox mặc định `off`. TTSR-lite và MEMORY.md mặc định on; tắt bằng `--without` hoặc `OPM_TTSR=0` / `OPM_MEMORY=0`.
 
 So với clone: Claude Code gợi ý không có hashline; Cline không hashline/lsp; omp auto-commit (OPM không); Codex không plan/ask. `pi-super` ghép các vũ khí v1 trên Pi core — có thể gần agent thật, hoặc mạnh hơn ở vài điểm. Browser pack không phải `computer` desktop.
 
@@ -139,6 +142,8 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 | `sandbox` | có | Policy path/net; profile `off` / `workspace` / `container`. | Default `off`. workspace: ghi cwd/tmp, chặn ~/.ssh ~/.aws ~/.gnupg. container: thêm chặn curl/wget/ssh. Chưa phải VM. | Codex workspace + Pi sandbox/gondolin (VM để sau). |
 | `task` | có | Tool `task`: scout (read+bash) hoặc worker (đủ tool + verify). Isolated `--mode json -p`. | Fan-out `tasks[]` (max 8, concurrency 4); `chain[]` với `{previous}`. Worker không auto-commit. Scout không edit/write. | Pi subagent example (single/parallel/chain) + omp `task`. |
 | `browser` | có | UI evidence: `snapshot` (`--dump-dom`) hoặc `screenshot`. | Cần Chrome/Chromium hoặc `OPM_CHROME_BIN`. Không có tool `computer`. Tắt trong `opm-verify` trừ `--with browser`. | Học browser CLI; bỏ desktop control. |
+| `ttsr` | có | TTSR-lite: assistant nói sẽ commit / skip tests / auto-learn → abort + followUp reminder. | Off trong `opm-verify`. Abort giữa stream có thể loop hoặc làm mất tool call trên một số model. Tắt: `--without ttsr` / `OPM_TTSR=0`. | Kỷ luật OPM; không phải retry hook upstream. |
+| `memory` | có | `MEMORY.md` (skill nếu có YAML `description:`, không thì system prompt). `/memory`, `/memory init`. | User-reviewed. Không auto-learn. Walk tới git root. Off trong `opm-verify`. Tắt: `--without memory` / `OPM_MEMORY=0`. | Project memory; đối lập omp auto `learn`. |
 
 ## Không lấy từ agent khác
 

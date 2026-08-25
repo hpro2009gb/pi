@@ -41,6 +41,8 @@ describe("customize packs", () => {
 		expect(text).toMatch(/\[x\] ask/);
 		expect(text).toMatch(/\[ \] plan/);
 		expect(text).toMatch(/\[ \] browser/);
+		expect(text).toMatch(/\[ \] ttsr/);
+		expect(text).toMatch(/\[ \] memory/);
 		expect(text).not.toMatch(/chưa v1/);
 	});
 

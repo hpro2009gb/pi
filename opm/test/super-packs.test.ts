@@ -4,7 +4,18 @@ import { PACK_ORDER, packPath, PRESET_PACKS, type PackId } from "../src/pack-reg
 import { resolveLaunchPlan } from "../src/presets.ts";
 import { extensionArgs } from "../src/spawn-pi.ts";
 
-const SUPER: PackId[] = ["verify", "hashline", "ask", "plan", "lsp", "sandbox", "task", "browser"];
+const SUPER: PackId[] = [
+	"verify",
+	"hashline",
+	"ask",
+	"plan",
+	"lsp",
+	"sandbox",
+	"task",
+	"browser",
+	"ttsr",
+	"memory",
+];
 
 describe("opm-full / pi-super shipped packs", () => {
 	it("every registered pack has an extension file on disk", () => {
