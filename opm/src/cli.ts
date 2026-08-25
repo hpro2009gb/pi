@@ -3,7 +3,7 @@ import { formatChooser } from "./catalog.ts";
 import { loadCustomPacks, resolveCustomizeDir, runCustomize } from "./customize.ts";
 import { initOpm } from "./init.ts";
 import { resolveLaunchPlan } from "./presets.ts";
-import { spawnPi } from "./spawn-pi.ts";
+import { formatDryRun, formatLaunchBanner, peelOpmCliFlags, resolvePiBin, spawnPi } from "./spawn-pi.ts";
 
 const argv = process.argv.slice(2);
 if (argv[0] === "choose" || argv[0] === "--choose") {
@@ -29,9 +29,18 @@ if (argv[0] === "customize") {
 }
 
 try {
-	const plan = resolveLaunchPlan(argv, {
+	const peeled = peelOpmCliFlags(argv);
+	const plan = resolveLaunchPlan(peeled.rest, {
 		savedCustomPacks: loadCustomPacks(resolveCustomizeDir()),
 	});
+	if (process.env.OPM_QUIET !== "1") {
+		process.stderr.write(formatLaunchBanner(plan));
+	}
+	if (peeled.dryRun) {
+		const piBin = resolvePiBin(process.env, import.meta.url);
+		process.stdout.write(formatDryRun(plan, piBin));
+		process.exit(0);
+	}
 	const result = spawnPi(plan);
 	if (result.error) {
 		process.stderr.write(`${result.error.message}\n`);

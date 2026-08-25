@@ -15,8 +15,20 @@
 Cần Node >= 22.19. Từ root repo:
 
 ```bash
-# Stock Pi (không pack)
+# Super Pi — đủ pack v1 (cách test)
+./opm-super.sh
+./opm-super.sh --dry-run          # in preset/packs/paths, không spawn TUI
+./opm-super.sh --help             # phải thấy --plan và --sandbox (pack đã load)
+./opm-super.sh --verbose          # TUI liệt kê Extensions
+
+# Wrapper chung (mặc định opm-verify)
+./opm.sh
+./opm.sh --preset pi
+./opm.sh init                     # ~/.opm/agent + symlink auth từ ~/.pi nếu có
+
+# Tương đương: OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts ...
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi
+
 
 # Mặc định: opm-verify (verify + hashline + ask + lsp)
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts
