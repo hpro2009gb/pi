@@ -83,6 +83,9 @@ export function resolveLaunchPlan(argv: string[], options: ResolveLaunchOptions 
 	if (startLaunchInPlan(preset) && packs.includes("plan") && !extraArgs.includes("--plan")) {
 		extraArgs.unshift("--plan");
 	}
+	if (preset === "codex" && packs.includes("sandbox") && !extraArgs.includes("--sandbox")) {
+		extraArgs.unshift("--sandbox", "workspace");
+	}
 
 	return {
 		preset,

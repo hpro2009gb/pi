@@ -35,9 +35,9 @@ export type AgentProfileCatalogEntry = {
 export const OPM_PRODUCT: ProductBlurb = {
 	what: "Wrapper CLI quanh Pi: engine vẫn là Pi (agent loop, TUI, session, `read`/`bash`/`edit`/`write`). Từng năng lực thêm là một pack (extension Pi). Preset bật/tắt pack, không sửa `packages/coding-agent`.",
 	special:
-		"Không fork `agent-loop` như Oh My Pi (`omp`). Pack tháo được (`--preset pi` = Pi gốc). Mặc định `opm-verify`: evidence, diff nhỏ, không commit hộ. Quyền vẫn là user — sandbox là phase sau.",
+		"Không fork `agent-loop` như Oh My Pi (`omp`). Pack tháo được (`--preset pi` = Pi gốc). Mặc định `opm-verify`: evidence, diff nhỏ, không commit hộ. Sandbox là policy (mặc định off); OS VM chưa gắn.",
 	learnedFrom:
-		"Nền: triết lý Pi (nhẹ, 4 tool, không nhét plan/MCP/todo vào core). Học chọn lọc: omp (hashline, LSP), Claude Code (hỏi có cấu trúc, plan mode), Cline (plan rồi mới act), Codex (sandbox — chưa ship). Không lấy 31 tool, `computer` desktop, MCP-in-core, auto-commit, auto `learn`.",
+		"Nền: triết lý Pi (nhẹ, 4 tool, không nhét plan/MCP/todo vào core). Học chọn lọc: omp (hashline, LSP), Claude Code (hỏi có cấu trúc, plan mode), Cline (plan rồi mới act), Codex (sandbox policy). Không lấy 31 tool, `computer` desktop, MCP-in-core, auto-commit, auto `learn`.",
 };
 
 export const PRESET_CATALOG: Record<PresetName, PresetCatalogEntry> = {
@@ -68,10 +68,10 @@ export const PRESET_CATALOG: Record<PresetName, PresetCatalogEntry> = {
 		available: true,
 	},
 	"opm-full": {
-		chooseWhen: "Khi pack phase 2 đã có trên máy",
+		chooseWhen: "Muốn sandbox + task + (browser khi có file)",
 		packs: PRESET_PACKS["opm-full"],
 		what: "`opm-plan` cộng sandbox + task + browser (file thiếu thì skip, không crash).",
-		special: "v1 chưa ship 3 pack sau. Đừng chọn nếu cần sandbox/subagent/browser ngay.",
+		special: "sandbox và task đã có. browser chưa ship — skip file thiếu. Sandbox mặc định off trừ khi `--sandbox workspace|container`.",
 		learnedFrom: "Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp.",
 		available: false,
 	},
@@ -129,15 +129,16 @@ export const PACK_CATALOG: Record<PackId, PackCatalogEntry> = {
 	},
 	sandbox: {
 		what: "Policy path/net cho bash/edit/write; profile off / workspace / container.",
-		special: "Default `off` (giữ Pi trên repo tin). Chưa có trong v1.",
-		learnedFrom: "Codex workspace sandbox + Pi `examples/extensions/sandbox` / gondolin.",
-		available: false,
+		special:
+			"Default `off`. workspace: ghi trong cwd/tmp, chặn ~/.ssh ~/.aws ~/.gnupg, mạng vẫn được. container: thêm chặn curl/wget/ssh (policy, chưa phải VM/bubblewrap).",
+		learnedFrom: "Codex workspace sandbox + Pi `examples/extensions/sandbox` / gondolin (VM để sau).",
+		available: true,
 	},
 	task: {
-		what: "Subagent context riêng (worker/scout).",
-		special: "Chưa có trong v1. Khi làm: worker inherit verify; scout read-only.",
+		what: "Tool `task`: subagent isolated (spawn Pi `--mode json -p`). scout = read+bash; worker = đủ tool + pack verify.",
+		special: "Worker không auto-commit. Scout không edit/write. Không port 31-tool omp. Cần model/API key như Pi.",
 		learnedFrom: "Pi `examples/extensions/subagent` + omp `task`. Không nhét subagent vào core Pi.",
-		available: false,
+		available: true,
 	},
 	browser: {
 		what: "UI evidence (browser), tắt mặc định trong `opm-verify`.",
@@ -218,10 +219,10 @@ export const AGENT_PROFILE_CATALOG: Record<AgentProfileId, AgentProfileCatalogEn
 	}),
 	codex: agentProfile("codex", {
 		mimics: "Codex (OpenAI)",
-		chooseWhen: "Ít nghi lễ, làm trong phạm vi an toàn — sandbox chưa có",
-		closest: "Chỉ pack verify (evidence, không commit hộ). 4 tool Pi.",
-		missing: "Sandbox workspace/container (pack sandbox phase 2) — đây là phần Codex khác Pi nhất.",
-		learnedFrom: "Codex: chạy trong workspace sandbox, ít hỏi. v1 chưa sandbox nên đây là profile yếu nhất về độ giống.",
+		chooseWhen: "Ít nghi lễ, làm trong phạm vi workspace",
+		closest: "verify + sandbox workspace (policy path; chưa phải OS VM).",
+		missing: "Sandbox OS/container thật (bubblewrap/gondolin QEMU), Codex app/IDE.",
+		learnedFrom: "Codex: chạy trong workspace sandbox, ít hỏi. OPM bật `--sandbox workspace` trên profile này.",
 	}),
 	"oh-my-pi": agentProfile("oh-my-pi", {
 		mimics: "Oh My Pi (omp)",

@@ -46,7 +46,7 @@ export const AGENT_PROFILES: Record<AgentProfileId, AgentProfileDef> = {
 	"command-code": { packs: ["verify", "ask", "plan"], startInPlan: true },
 	opencode: { packs: ["verify", "ask", "lsp"], startInPlan: false },
 	copilot: { packs: ["verify", "ask", "lsp"], startInPlan: false },
-	codex: { packs: ["verify"], startInPlan: false },
+	codex: { packs: ["verify", "sandbox"], startInPlan: false },
 	"oh-my-pi": { packs: ["verify", "hashline", "ask", "plan", "lsp"], startInPlan: false },
 	cursor: { packs: ["verify", "hashline", "ask", "lsp"], startInPlan: false },
 	aider: { packs: ["verify", "hashline", "ask"], startInPlan: false },

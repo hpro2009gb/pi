@@ -100,6 +100,23 @@ describe("resolveLaunchPlan", () => {
 	it("unknown pack in --with throws", () => {
 		expect(() => resolveLaunchPlan(["--with", "laser"])).toThrow(/Unknown pack: laser/);
 	});
+
+	it("profile codex loads sandbox and starts in workspace profile", () => {
+		const plan = resolveLaunchPlan(["--profile", "codex"]);
+		expect(plan.packs).toEqual(["verify", "sandbox"]);
+		expect(plan.extraArgs).toEqual(["--sandbox", "workspace"]);
+	});
+
+	it("profile codex does not duplicate --sandbox", () => {
+		const plan = resolveLaunchPlan(["--profile", "codex", "--sandbox", "off"]);
+		expect(plan.extraArgs).toEqual(["--sandbox", "off"]);
+	});
+
+	it("codex without sandbox pack does not inject --sandbox", () => {
+		const plan = resolveLaunchPlan(["--profile", "codex", "--without", "sandbox"]);
+		expect(plan.packs).toEqual(["verify"]);
+		expect(plan.extraArgs).toEqual([]);
+	});
 });
 
 describe("extensionArgs", () => {

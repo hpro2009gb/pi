@@ -40,13 +40,19 @@ OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile claude-code --with hashline -
 # PI SUPER (combo nghiên cứu của OPM — đủ kit v1, không khóa plan)
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi-super
 
+# Codex-like: verify + sandbox workspace
+OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile codex
+
+# Bật sandbox/task trên combo bất kỳ (`--sandbox` là flag pack: off|workspace|container)
+OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --with sandbox,task --sandbox workspace
+
 # Tự chọn vũ khí, lưu, rồi chạy
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts customize --from claude-code --with hashline --without lsp
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile custom
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile custom --with verify,ask
 ```
 
-`OPM_PI_FROM_SOURCE=1` dùng `./pi-test.sh`. Muốn binary khác: `OPM_PI_BIN=/path/to/pi`.
+`OPM_PI_FROM_SOURCE=1` dùng `./pi-test.sh`. Muốn binary khác: `OPM_PI_BIN=/path/to/pi`. Nếu `pi` không có trên PATH, `opm` tự dùng `./pi-test.sh` khi chạy từ repo này.
 
 `opm` set `PI_CODING_AGENT_DIR` mặc định thành `~/.opm/agent`. Auth: nếu có `~/.pi/agent/auth.json`, `opm init` tạo symlink `~/.opm/agent/auth.json` trỏ tới file đó (không copy secret vào git).
 
@@ -55,8 +61,8 @@ OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile custom --with verify,ask
 | Câu hỏi | Trả lời |
 | --- | --- |
 | Tích hợp này là gì? | Wrapper CLI quanh Pi: engine vẫn là Pi (agent loop, TUI, session, `read`/`bash`/`edit`/`write`). Từng năng lực thêm là một pack (extension Pi). Preset bật/tắt pack, không sửa `packages/coding-agent`. |
-| Đặc biệt chỗ nào? | Không fork `agent-loop` như Oh My Pi (`omp`). Pack tháo được (`--preset pi` = Pi gốc). Mặc định `opm-verify`: evidence, diff nhỏ, không commit hộ. Quyền vẫn là user — sandbox là phase sau. |
-| Học từ triết lý agent nào? | Nền: triết lý Pi (nhẹ, 4 tool, không nhét plan/MCP/todo vào core). Học chọn lọc: omp (hashline, LSP), Claude Code (hỏi có cấu trúc, plan mode), Cline (plan rồi mới act), Codex (sandbox — chưa ship). Không lấy 31 tool, `computer` desktop, MCP-in-core, auto-commit, auto `learn`. |
+| Đặc biệt chỗ nào? | Không fork `agent-loop` như Oh My Pi (`omp`). Pack tháo được (`--preset pi` = Pi gốc). Mặc định `opm-verify`: evidence, diff nhỏ, không commit hộ. Sandbox là policy (mặc định off); OS VM chưa gắn. |
+| Học từ triết lý agent nào? | Nền: triết lý Pi (nhẹ, 4 tool, không nhét plan/MCP/todo vào core). Học chọn lọc: omp (hashline, LSP), Claude Code (hỏi có cấu trúc, plan mode), Cline (plan rồi mới act), Codex (sandbox policy). Không lấy 31 tool, `computer` desktop, MCP-in-core, auto-commit, auto `learn`. |
 
 In lại bảng này: `OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose`.
 
@@ -67,7 +73,7 @@ In lại bảng này: `OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose`.
 | `pi` | Muốn đúng Pi gốc, hoặc đang debug pack | Pi | Không load pack. Model chỉ thấy `read`, `bash`, `edit`, `write` (edit `oldText` của Pi). | Baseline. Dùng để so sánh: mọi thứ khác là pack, không phải core. | Pi — harness nhỏ, user-permission, không permission-popup hay plan mode trong core. |
 | `opm-verify` (mặc định) | Làm việc hằng ngày | Pi + verify, hashline, ask, lsp | Bốn tool Pi + `ask` + `lsp`; edit/read hashline. | Chặn `git commit`/`push`/`reset --hard` trừ khi user hỏi; hỏi select/confirm; LSP TS/JS nếu có server. | Kỷ luật OPM (evidence, không commit lén) + omp (hashline/LSP) + Claude Code / Pi `question.ts` (ask). |
 | `opm-plan` | Cần thiết kế trước, chưa cho agent sửa file | Pi + verify, hashline, ask, plan, lsp | `/plan`; write/edit tắt đến khi accept. | Bash allowlist; confirm mới được viết; Cancel giữ plan mode; không tự execute. | Claude Code plan, Cline plan-then-act, Pi `plan-mode`. Khác example Pi: không auto-run. |
-| `opm-full` (phase 2) | Khi pack phase 2 đã có trên máy | Pi + verify, hashline, ask, plan, lsp, sandbox, task, browser | Union; file thiếu thì skip. | v1 chưa ship 3 pack sau. Đừng chọn nếu cần sandbox/subagent/browser ngay. | Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp. |
+| `opm-full` (phase 2) | Muốn sandbox + task (+ browser khi có) | Pi + verify, hashline, ask, plan, lsp, sandbox, task, browser | Union; file thiếu thì skip. | sandbox/task đã có; browser chưa. `--sandbox` mặc định off. | Codex + Pi sandbox; Pi subagent / omp `task`. |
 | `pi-super` | Daily driver nghiên cứu của OPM | Pi + verify, hashline, ask, plan, lsp | Đủ kit v1; `/plan` khi cần, không khóa lúc start. | Không clone Claude/Cline/omp. Ghép vũ khí mà từng agent kia không có cùng lúc. | Pi + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan opt-in. |
 | `custom` | Tự tích vũ khí | (tự chọn) | Pack user chọn / file đã lưu. | `opm customize --from <profile> --with/--without`. | User tùy biến; profile agent chỉ là gợi ý. |
 
@@ -113,7 +119,7 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 | `command-code` | Command Code | Họ plan/act | Pi + verify, ask, plan | như `cline` | Command palette/IDE | `--plan` |
 | `opencode` | OpenCode | TUI, hỏi khi cần, không khóa plan | Pi + verify, ask, lsp | Pi TUI + ask/lsp/verify | Session/share, plugin marketplace | normal |
 | `copilot` | GitHub Copilot Agent | Agent + lint + hỏi | Pi + verify, ask, lsp | ask+lsp+verify | GitHub PR agent, inline IDE | normal |
-| `codex` | Codex | Ít nghi lễ; sandbox chưa có | Pi + verify | Evidence, không commit hộ | **Sandbox** (phase 2) — khoảng cách lớn nhất | normal |
+| `codex` | Codex | Ít nghi lễ, phạm vi workspace | Pi + verify, sandbox | `--sandbox workspace`; không commit hộ | OS VM/bubblewrap, Codex IDE | `--sandbox workspace` |
 | `oh-my-pi` | Oh My Pi (`omp`) | Batteries: hashline+lsp+ask+plan | Pi + verify, hashline, ask, plan, lsp | Cùng pack `opm-plan`; vẫn chặn auto-commit | 31 tool, `computer`, Rust, MCP-in-core, `/collab`. Lệnh `omp` ≠ profile này | normal |
 | `cursor` | Cursor Agent | Edit neo + diagnostics + hỏi | Pi + verify, hashline, ask, lsp | Cùng pack `opm-verify` | IDE, Composer, Tab, cloud agent | normal |
 | `aider` | Aider | Sửa neo, git do user | Pi + verify, hashline, ask | hashline + ask; không auto-commit | Repo map, conventional commit mặc định của Aider | normal |
@@ -127,8 +133,8 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 | `ask` | có | Tool `ask`: ≥2 options → select, yes/no → confirm, còn lại → input. Sequential. | Không todo tool. Non-TUI trả lỗi, không giả câu trả lời. | Claude Code AskUserQuestion + Pi `question.ts`. |
 | `plan` | có | `/plan` (và `--plan`): lọc tool + bash allowlist; confirm mới bật write. | Không auto-execute. Cancel = vẫn plan mode. | Claude Code plan, Cline plan/act, Pi `plan-mode` example. |
 | `lsp` | có | Tool `lsp` + diagnostics sau `edit`/`write` TS/JS. | Thiếu `typescript-language-server`: báo lỗi, không crash. Lang khác: `unsupported in v1`. | omp LSP + hook `tool_result` của Pi. |
-| `sandbox` | chưa | Policy path/net; profile off / workspace / container. | Default `off` (giữ Pi trên repo tin). | Codex workspace sandbox + Pi sandbox/gondolin. |
-| `task` | chưa | Subagent context riêng. | Worker inherit verify; scout read-only (khi làm). | Pi `subagent` example + omp `task`. |
+| `sandbox` | có | Policy path/net; profile `off` / `workspace` / `container`. | Default `off`. workspace: ghi cwd/tmp, chặn ~/.ssh ~/.aws ~/.gnupg. container: thêm chặn curl/wget/ssh. Chưa phải VM. | Codex workspace + Pi sandbox/gondolin (VM để sau). |
+| `task` | có | Tool `task`: scout (read+bash) hoặc worker (đủ tool + verify). Isolated `--mode json -p`. | Worker không auto-commit. Scout không edit/write. | Pi subagent example + omp `task`. |
 | `browser` | chưa | UI evidence. | Không thêm `computer` desktop của omp. | Học browser; bỏ desktop control. |
 
 ## Không lấy từ agent khác
@@ -147,7 +153,7 @@ Hoặc `pi install /path/to/package` nếu đóng gói đúng layout Pi package 
 
 ## Bảo mật
 
-OPM **vẫn chạy với quyền user**, giống Pi. Không sandbox trong v1. Agent có thể chạy bash, sửa file, mạng — trừ khi pack `verify`/`plan` chặn một phần. Pack sandbox là phase sau. Đừng commit trừ khi user hỏi.
+OPM **vẫn chạy với quyền user**, giống Pi. Pack `sandbox` là **policy** (chặn tool_call), không phải bubblewrap/QEMU. Agent vẫn có thể làm hại nếu profile `off` hoặc lệnh bash lách policy. Đừng commit trừ khi user hỏi.
 
 ## Test
 
