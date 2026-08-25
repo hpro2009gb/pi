@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { defaultOpmAgentDir } from "./init.ts";
 import type { LaunchPlan } from "./presets.ts";
 
 export function findRepoRoot(startDir: string): string {
@@ -53,13 +54,16 @@ export function spawnPi(
 		fromFileUrl?: string;
 	},
 ): { status: number | null; warnings: string[]; error?: Error } {
-	const env = options?.env ?? process.env;
+	const env = { ...(options?.env ?? process.env) };
+	if (!env.PI_CODING_AGENT_DIR) {
+		env.PI_CODING_AGENT_DIR = defaultOpmAgentDir();
+	}
 	const piBin = resolvePiBin(env, options?.fromFileUrl ?? import.meta.url);
 	const { args: eArgs, warnings } = extensionArgs(plan.extensionPaths);
 	for (const warning of warnings) {
 		process.stderr.write(`${warning}\n`);
 	}
-	const result = spawnSync(piBin, [...eArgs, ...plan.extraArgs], {
+	const result = spawnSync(piBin, ["--no-extensions", ...eArgs, ...plan.extraArgs], {
 		stdio: "inherit",
 		env,
 		cwd: options?.cwd,
