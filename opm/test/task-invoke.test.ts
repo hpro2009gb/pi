@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
 	MAX_PARALLEL_TASKS,
@@ -7,8 +9,11 @@ import {
 	mapWithConcurrencyLimit,
 	parseFanoutInput,
 	parseTaskAgent,
+	resolveChildInvocation,
 	runFanoutJobs,
 } from "../packs/task/invoke.ts";
+
+const SOURCE_CLI = fileURLToPath(new URL("../../packages/coding-agent/src/cli.ts", import.meta.url));
 
 describe("parseTaskAgent", () => {
 	it("accepts scout and worker", () => {
@@ -49,6 +54,21 @@ describe("buildTaskArgs", () => {
 		expect(args).toContain("/workspace/opm/packs/verify/index.ts");
 		expect(args.includes("--tools")).toBe(false);
 		expect(args.at(-1)).toBe("fix the bug");
+	});
+
+	it("passes parent model and thinking to the child", () => {
+		const args = buildTaskArgs({
+			agent: "scout",
+			task: "find auth",
+			verifyPack: "/v.ts",
+			model: "anthropic/claude-sonnet-4",
+			thinking: "low",
+		});
+		expect(args).toContain("--model");
+		expect(args[args.indexOf("--model") + 1]).toBe("anthropic/claude-sonnet-4");
+		expect(args).toContain("--thinking");
+		expect(args[args.indexOf("--thinking") + 1]).toBe("low");
+		expect(args.at(-1)).toBe("find auth");
 	});
 });
 
@@ -218,5 +238,93 @@ describe("formatFanoutReport", () => {
 		);
 		expect(text).toContain("agent=scout exit=0");
 		expect(text).toContain("ok");
+	});
+});
+
+describe("resolveChildInvocation", () => {
+	it("does not spawn raw node on the TypeScript CLI (workspace packages need tsx)", () => {
+		const invoked = resolveChildInvocation(["--mode", "json", "-p", "go"], {}, {
+			execPath: "/usr/bin/node",
+			scriptPath: SOURCE_CLI,
+		});
+		expect(invoked.command.replaceAll("\\", "/")).toMatch(/\/pi-test\.sh$/);
+		expect(invoked.args).toEqual(["--mode", "json", "-p", "go"]);
+		expect(invoked.args[0]).not.toBe(SOURCE_CLI);
+	});
+
+	it("reuses a compiled JavaScript CLI with the parent node", () => {
+		const invoked = resolveChildInvocation(["-p", "go"], {}, {
+			execPath: "/usr/bin/node",
+			scriptPath: "/opt/pi/dist/cli.js",
+			exists: (path) => path.endsWith("cli.js"),
+		});
+		expect(invoked).toEqual({
+			command: "/usr/bin/node",
+			args: ["/opt/pi/dist/cli.js", "-p", "go"],
+		});
+	});
+
+	it("lets bun run the TypeScript CLI directly", () => {
+		const invoked = resolveChildInvocation(["-p", "go"], {}, {
+			execPath: "/usr/bin/bun",
+			scriptPath: SOURCE_CLI,
+			exists: (path) => path.endsWith("cli.ts"),
+		});
+		expect(invoked).toEqual({
+			command: "/usr/bin/bun",
+			args: [SOURCE_CLI, "-p", "go"],
+		});
+	});
+
+	it("uses a compiled pi binary as the command", () => {
+		const invoked = resolveChildInvocation(["-p", "go"], {}, {
+			execPath: "/usr/local/bin/pi",
+			exists: () => false,
+		});
+		expect(invoked).toEqual({ command: "/usr/local/bin/pi", args: ["-p", "go"] });
+	});
+
+	it("honors OPM_PI_BIN when the parent TypeScript CLI cannot run under node", () => {
+		const invoked = resolveChildInvocation(["-p", "go"], { OPM_PI_BIN: "/custom/pi-test.sh" }, {
+			execPath: "/usr/bin/node",
+			scriptPath: SOURCE_CLI,
+		});
+		expect(invoked).toEqual({ command: "/custom/pi-test.sh", args: ["-p", "go"] });
+	});
+
+	it("honors OPM_PI_BIN when there is no parent script", () => {
+		const invoked = resolveChildInvocation(["-p", "go"], { OPM_PI_BIN: "/custom/pi-test.sh" }, {
+			execPath: "/usr/bin/node",
+			exists: () => false,
+		});
+		expect(invoked).toEqual({ command: "/custom/pi-test.sh", args: ["-p", "go"] });
+	});
+
+	it("child invocation can run pi --version", () => {
+		const invoked = resolveChildInvocation(["--version"], {}, {
+			execPath: process.execPath,
+			scriptPath: SOURCE_CLI,
+		});
+		const result = spawnSync(invoked.command, invoked.args, { encoding: "utf8", timeout: 20_000 });
+		expect(result.error, result.stderr).toBeUndefined();
+		expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+		expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
+	});
+
+	it("can run two child pi --version probes", async () => {
+		const invoked = resolveChildInvocation(["--version"], {}, {
+			execPath: process.execPath,
+			scriptPath: SOURCE_CLI,
+		});
+		const results = await mapWithConcurrencyLimit([0, 1], 2, () => {
+			const result = spawnSync(invoked.command, invoked.args, { encoding: "utf8", timeout: 20_000 });
+			return Promise.resolve(result);
+		});
+		expect(results).toHaveLength(2);
+		for (const result of results) {
+			expect(result.error, result.stderr).toBeUndefined();
+			expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+			expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
+		}
 	});
 });

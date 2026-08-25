@@ -1,3 +1,7 @@
+import { existsSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+import { findRepoRoot, resolvePiBin } from "../../src/spawn-pi.ts";
+
 export type TaskAgent = "scout" | "worker";
 
 export const MAX_PARALLEL_TASKS = 8;
@@ -16,6 +20,8 @@ export type BuildTaskArgsOptions = {
 	verifyPack: string;
 	promptFile?: string;
 	sandboxPack?: string;
+	model?: string;
+	thinking?: string;
 };
 
 export function buildTaskArgs(options: BuildTaskArgsOptions): string[] {
@@ -28,6 +34,12 @@ export function buildTaskArgs(options: BuildTaskArgsOptions): string[] {
 	}
 	if (options.agent === "scout") {
 		args.push("--tools", "read,bash");
+	}
+	if (options.model) {
+		args.push("--model", options.model);
+	}
+	if (options.thinking) {
+		args.push("--thinking", options.thinking);
 	}
 	args.push(options.task);
 	return args;
@@ -201,4 +213,67 @@ export async function runFanoutJobs(
 	const concurrency = options?.concurrency ?? MAX_CONCURRENCY;
 	const results = await mapWithConcurrencyLimit(parsed.jobs, concurrency, (job) => run(job));
 	return { results, text: formatFanoutReport("parallel", parsed.jobs, results) };
+}
+
+export type ChildInvocationRuntime = {
+	execPath: string;
+	scriptPath?: string;
+	exists?: (path: string) => boolean;
+	fromFileUrl?: string;
+};
+
+/** From-source `node cli.ts` cannot resolve workspace package dist/. Use pi-test.sh. */
+function resolveSourceWrapper(
+	script: string,
+	piArgs: string[],
+	env: NodeJS.ProcessEnv,
+	runtime: ChildInvocationRuntime,
+): { command: string; args: string[] } {
+	if (env.OPM_PI_BIN && env.OPM_PI_BIN.length > 0) {
+		return { command: env.OPM_PI_BIN, args: piArgs };
+	}
+	try {
+		return { command: join(findRepoRoot(dirname(script)), "pi-test.sh"), args: piArgs };
+	} catch {
+		return {
+			command: resolvePiBin(env, runtime.fromFileUrl ?? import.meta.url),
+			args: piArgs,
+		};
+	}
+}
+
+export function resolveChildInvocation(
+	piArgs: string[],
+	env: NodeJS.ProcessEnv = process.env,
+	runtime: ChildInvocationRuntime = {
+		execPath: process.execPath,
+		scriptPath: process.argv[1],
+	},
+): { command: string; args: string[] } {
+	const exists = runtime.exists ?? existsSync;
+	const script = runtime.scriptPath;
+	const execName = basename(runtime.execPath).toLowerCase();
+	if (script && exists(script) && !script.startsWith("/$bunfs/")) {
+		const isJs = /\.(cjs|mjs|js)$/.test(script);
+		const isTs = /\.ts$/.test(script);
+		if (isJs) {
+			return { command: runtime.execPath, args: [script, ...piArgs] };
+		}
+		if (isTs && /^(bun|tsx)(\.exe)?$/.test(execName)) {
+			return { command: runtime.execPath, args: [script, ...piArgs] };
+		}
+		if (isTs && /^node(\.exe)?$/.test(execName)) {
+			return resolveSourceWrapper(script, piArgs, env, runtime);
+		}
+	}
+	if (!/^(node|bun|tsx)(\.exe)?$/.test(execName)) {
+		return { command: runtime.execPath, args: piArgs };
+	}
+	if (env.OPM_PI_BIN && env.OPM_PI_BIN.length > 0) {
+		return { command: env.OPM_PI_BIN, args: piArgs };
+	}
+	return {
+		command: resolvePiBin(env, runtime.fromFileUrl ?? import.meta.url),
+		args: piArgs,
+	};
 }
