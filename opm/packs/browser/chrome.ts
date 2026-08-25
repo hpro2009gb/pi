@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { delimiter, isAbsolute, join } from "node:path";
 
 export type BrowserAction = "snapshot" | "screenshot";
@@ -27,7 +28,8 @@ export type RunBrowserDeps = {
 
 const CHROME_NAMES = ["google-chrome-stable", "google-chrome", "chromium", "chromium-browser", "chrome"];
 const DUMP_CAP = 100 * 1024;
-const HEADLESS = ["--headless=new", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage"];
+const CHROME_TIMEOUT_MS = 15_000;
+const HEADLESS = ["--headless=new", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage", "--no-first-run"];
 
 export function parseBrowserAction(value: string): BrowserAction {
 	if (value === "snapshot" || value === "screenshot") {
@@ -45,17 +47,31 @@ export function isAllowedBrowserUrl(url: string): boolean {
 	}
 }
 
+export function isDebugLauncherWrapper(path: string): boolean {
+	try {
+		const stat = statSync(path);
+		if (stat.size === 0 || stat.size > 64 * 1024) {
+			return false;
+		}
+		const text = readFileSync(path, "utf8");
+		return text.startsWith("#!") && text.includes("remote-debugging-port");
+	} catch {
+		return false;
+	}
+}
+
 export function resolveChromeBin(env: NodeJS.ProcessEnv = process.env): string | undefined {
 	if (env.OPM_CHROME_BIN && existsSync(env.OPM_CHROME_BIN)) {
 		return env.OPM_CHROME_BIN;
 	}
-	for (const dir of (env.PATH ?? "").split(delimiter)) {
-		if (!dir) {
-			continue;
-		}
-		for (const name of CHROME_NAMES) {
+	const dirs = (env.PATH ?? "").split(delimiter);
+	for (const name of CHROME_NAMES) {
+		for (const dir of dirs) {
+			if (!dir) {
+				continue;
+			}
 			const candidate = join(dir, name);
-			if (existsSync(candidate)) {
+			if (existsSync(candidate) && !isDebugLauncherWrapper(candidate)) {
 				return candidate;
 			}
 		}
@@ -82,11 +98,34 @@ function cap(text: string): string {
 	return `${text.slice(0, DUMP_CAP)}\n… truncated`;
 }
 
-export async function defaultChromeExec(bin: string, args: string[]): Promise<ChromeExecResult> {
+export async function defaultChromeExec(
+	bin: string,
+	args: string[],
+	timeoutMs = CHROME_TIMEOUT_MS,
+): Promise<ChromeExecResult> {
 	return new Promise((resolve) => {
 		const child = spawn(bin, args, { stdio: ["ignore", "pipe", "pipe"] });
 		let stdout = "";
 		let stderr = "";
+		let finished = false;
+		const finish = (result: ChromeExecResult) => {
+			if (finished) {
+				return;
+			}
+			finished = true;
+			clearTimeout(timer);
+			resolve(result);
+		};
+		const timer = setTimeout(() => {
+			if (child.pid !== undefined) {
+				try {
+					child.kill("SIGKILL");
+				} catch {
+					// already exited
+				}
+			}
+			finish({ code: 1, stdout, stderr: stderr || "chrome timed out" });
+		}, timeoutMs);
 		child.stdout?.on("data", (chunk: Buffer) => {
 			stdout += chunk.toString("utf8");
 		});
@@ -94,10 +133,10 @@ export async function defaultChromeExec(bin: string, args: string[]): Promise<Ch
 			stderr += chunk.toString("utf8");
 		});
 		child.on("error", (error) => {
-			resolve({ code: 1, stdout, stderr: error.message });
+			finish({ code: 1, stdout, stderr: error.message });
 		});
 		child.on("close", (code) => {
-			resolve({ code: code ?? 1, stdout, stderr });
+			finish({ code: code ?? 1, stdout, stderr });
 		});
 	});
 }
@@ -113,19 +152,24 @@ export async function runBrowserAction(input: RunBrowserInput, deps: RunBrowserD
 	if (!bin) {
 		return { ok: false, text: missingChromeMessage() };
 	}
-	if (action === "snapshot") {
-		const result = await exec(bin, buildChromeDumpArgs(input.url));
+	const profile = mkdtempSync(join(tmpdir(), "opm-chrome-profile-"));
+	try {
+		if (action === "snapshot") {
+			const result = await exec(bin, [...buildChromeDumpArgs(input.url), `--user-data-dir=${profile}`]);
+			if (result.code !== 0) {
+				return { ok: false, text: cap(result.stderr || `chrome exited ${result.code}`) };
+			}
+			return { ok: true, text: cap(result.stdout) };
+		}
+		const cwd = input.cwd ?? process.cwd();
+		const rawPath = input.path ?? "opm-browser-screenshot.png";
+		const outputPath = isAbsolute(rawPath) ? rawPath : join(cwd, rawPath);
+		const result = await exec(bin, [...buildChromeScreenshotArgs(input.url, outputPath), `--user-data-dir=${profile}`]);
 		if (result.code !== 0) {
 			return { ok: false, text: cap(result.stderr || `chrome exited ${result.code}`) };
 		}
-		return { ok: true, text: cap(result.stdout) };
+		return { ok: true, text: `screenshot written to ${outputPath}` };
+	} finally {
+		rmSync(profile, { recursive: true, force: true });
 	}
-	const cwd = input.cwd ?? process.cwd();
-	const rawPath = input.path ?? "opm-browser-screenshot.png";
-	const outputPath = isAbsolute(rawPath) ? rawPath : join(cwd, rawPath);
-	const result = await exec(bin, buildChromeScreenshotArgs(input.url, outputPath));
-	if (result.code !== 0) {
-		return { ok: false, text: cap(result.stderr || `chrome exited ${result.code}`) };
-	}
-	return { ok: true, text: `screenshot written to ${outputPath}` };
 }

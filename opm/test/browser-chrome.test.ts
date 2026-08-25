@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import {
 	buildChromeDumpArgs,
 	buildChromeScreenshotArgs,
+	defaultChromeExec,
 	isAllowedBrowserUrl,
+	isDebugLauncherWrapper,
 	parseBrowserAction,
 	resolveChromeBin,
 	runBrowserAction,
@@ -124,6 +126,40 @@ describe("resolveChromeBin", () => {
 
 	it("returns undefined when nothing is on PATH", () => {
 		expect(resolveChromeBin({ PATH: "/tmp/opm-no-chrome" })).toBeUndefined();
+	});
+
+	it("prefers google-chrome-stable over an earlier PATH google-chrome", () => {
+		const root = mkdtempSync(join(tmpdir(), "opm-chrome-path-"));
+		const early = join(root, "early");
+		const late = join(root, "late");
+		mkdirSync(early);
+		mkdirSync(late);
+		writeFileSync(join(early, "google-chrome"), "#!/bin/sh\n");
+		writeFileSync(join(late, "google-chrome-stable"), "#!/bin/sh\n");
+		expect(resolveChromeBin({ PATH: `${early}:${late}` })).toBe(join(late, "google-chrome-stable"));
+		rmSync(root, { recursive: true, force: true });
+	});
+
+	it("skips remote-debugging launcher wrappers", () => {
+		const root = mkdtempSync(join(tmpdir(), "opm-chrome-wrap-"));
+		writeFileSync(
+			join(root, "google-chrome-stable"),
+			"#!/bin/bash\nexec /usr/bin/google-chrome-stable --remote-debugging-port=9222 \"$@\"\n",
+		);
+		writeFileSync(join(root, "chromium"), "#!/bin/sh\n");
+		expect(isDebugLauncherWrapper(join(root, "google-chrome-stable"))).toBe(true);
+		expect(resolveChromeBin({ PATH: root })).toBe(join(root, "chromium"));
+		rmSync(root, { recursive: true, force: true });
+	});
+});
+
+describe("defaultChromeExec", () => {
+	it("kills a hung binary at the timeout", async () => {
+		const start = Date.now();
+		const result = await defaultChromeExec("/bin/sleep", ["30"], 200);
+		expect(result.code).not.toBe(0);
+		expect(Date.now() - start).toBeLessThan(5000);
+		expect(result.stderr).toMatch(/timed out/i);
 	});
 });
 
