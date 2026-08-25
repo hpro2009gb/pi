@@ -5,6 +5,7 @@ import { Type } from "typebox";
 import {
 	buildTaskArgs,
 	parseFanoutInput,
+	resolveChildInvocation,
 	runFanoutJobs,
 	type TaskAgent,
 	type TaskJob,
@@ -45,10 +46,11 @@ function runPiTask(
 	signal: AbortSignal | undefined,
 	sandboxProfile: string,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-	const command = process.env.OPM_PI_BIN || "pi";
+	// Inherit PI_CODING_AGENT_DIR so children keep parent auth; --no-session isolates the session file.
 	const env = { ...process.env, OPM_SANDBOX: sandboxProfile };
+	const invocation = resolveChildInvocation(args, env);
 	return new Promise((resolve) => {
-		const child = spawn(command, args, {
+		const child = spawn(invocation.command, invocation.args, {
 			cwd,
 			stdio: ["ignore", "pipe", "pipe"],
 			env,
@@ -100,6 +102,12 @@ export default function taskPack(pi: ExtensionAPI): void {
 			}
 			const flag = pi.getFlag("sandbox");
 			const sandboxProfile = typeof flag === "string" && flag.length > 0 ? flag : (process.env.OPM_SANDBOX ?? "off");
+			const model = ctx.model;
+			const modelRef =
+				model && typeof model.provider === "string" && typeof model.id === "string"
+					? `${model.provider}/${model.id}`
+					: undefined;
+			const thinking = ctx.thinkingLevel;
 			const { text } = await runFanoutJobs(parsed, (job: TaskJob) => {
 				const args = buildTaskArgs({
 					agent: job.agent,
@@ -107,6 +115,8 @@ export default function taskPack(pi: ExtensionAPI): void {
 					verifyPack: VERIFY_PACK,
 					sandboxPack: SANDBOX_PACK,
 					promptFile: promptFileFor(job.agent),
+					model: modelRef,
+					thinking: typeof thinking === "string" ? thinking : undefined,
 				});
 				return runPiTask(args, ctx.cwd, signal, sandboxProfile);
 			});
