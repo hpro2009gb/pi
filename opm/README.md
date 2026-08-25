@@ -16,10 +16,15 @@ Cần Node >= 22.19. Từ root repo:
 
 ```bash
 # Super Pi — đủ pack v1 (cách test)
-./opm-super.sh
+./opm-super.sh --approve --verbose
 ./opm-super.sh --dry-run          # in preset/packs/paths, không spawn TUI
 ./opm-super.sh --help             # phải thấy --plan và --sandbox (pack đã load)
-./opm-super.sh --verbose          # TUI liệt kê Extensions
+
+# Model: TUI sẽ báo "No models available" nếu chưa login.
+# /login trong TUI, hoặc ghi key vào ~/.pi/agent/auth.json rồi:
+./opm.sh init
+# Lần đầu trong repo, Pi hỏi Trust project folder; --approve bỏ dialog đó.
+
 
 # Wrapper chung (mặc định opm-verify)
 ./opm.sh
