@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { attachOpmToHost, formatAttachResult } from "./attach-pi.ts";
 import { formatChooser } from "./catalog.ts";
 import { loadCustomPacks, resolveCustomizeDir, runCustomize } from "./customize.ts";
 import { initOpm } from "./init.ts";
@@ -16,6 +17,15 @@ if (argv[0] === "init") {
 	process.stdout.write(`settings: ${result.settingsPath}\n`);
 	process.stdout.write(`auth: ${result.authLinked ? result.authPath : "(no ~/.pi/agent/auth.json found)"}\n`);
 	process.exit(0);
+}
+if (argv[0] === "attach" || argv[0] === "attach-pi" || argv[0] === "install-to-pi") {
+	const result = attachOpmToHost({ args: argv.slice(1) });
+	process.stdout.write(formatAttachResult(result));
+	if (result.error) {
+		process.stderr.write(`${result.error.message}\n`);
+		process.exit(1);
+	}
+	process.exit(result.status ?? 1);
 }
 if (argv[0] === "customize") {
 	try {

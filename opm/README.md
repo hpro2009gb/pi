@@ -157,7 +157,7 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 | `plan` | có | `/plan` (và `--plan`): lọc tool + bash allowlist; confirm mới bật write. | Không auto-execute. Cancel = vẫn plan mode. | Claude Code plan, Cline plan/act, Pi `plan-mode` example. |
 | `lsp` | có | Tool `lsp` + diagnostics sau `edit`/`write` TS/JS. | Thiếu `typescript-language-server`: báo lỗi, không crash. Lang khác: `unsupported in v1`. | omp LSP + hook `tool_result` của Pi. |
 | `sandbox` | có | Policy path/net; profile `off` / `workspace` / `container`. | Default `off`. workspace: ghi cwd/tmp, chặn ~/.ssh ~/.aws ~/.gnupg. container: thêm chặn curl/wget/ssh. Chưa phải VM. | Codex workspace + Pi sandbox/gondolin (VM để sau). |
-| `task` | có | Tool `task`: scout (read+bash) hoặc worker (đủ tool + verify). Isolated `--mode json -p`. | Fan-out `tasks[]` (max 8, concurrency 4); `chain[]` với `{previous}`. Worker không auto-commit. Scout không edit/write. | Pi subagent example (single/parallel/chain) + omp `task`. |
+| `task` | có | Tool `task`: scout (read+bash) hoặc worker (đủ tool + verify). Isolated `--mode json -p`. | Fan-out `tasks[]` (max 8, concurrency 4); `chain[]` với `{previous}`. Child spawn cùng engine parent (`pi-test.sh` từ source, binary `pi` nếu compiled). Không `node cli.ts`. Worker không auto-commit. Scout không edit/write. | Pi subagent example (single/parallel/chain) + omp `task`. |
 | `browser` | có | UI evidence: `snapshot` (`--dump-dom`) hoặc `screenshot`. | Cần Chrome/Chromium hoặc `OPM_CHROME_BIN`. Không có tool `computer`. Tắt trong `opm-verify` trừ `--with browser`. | Học browser CLI; bỏ desktop control. |
 | `ttsr` | có | TTSR-lite: assistant nói sẽ commit / skip tests / auto-learn → abort + followUp reminder. | Off trong `opm-verify`. Abort giữa stream có thể loop hoặc làm mất tool call trên một số model. Tắt: `--without ttsr` / `OPM_TTSR=0`. | Kỷ luật OPM; không phải retry hook upstream. |
 | `memory` | có | `MEMORY.md` (skill nếu có YAML `description:`, không thì system prompt). `/memory`, `/memory init`. | User-reviewed. Không auto-learn. Walk tới git root. Off trong `opm-verify`. Tắt: `--without memory` / `OPM_MEMORY=0`. | Project memory; đối lập omp auto `learn`. |
@@ -168,13 +168,25 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 
 ## Gắn pack vào `pi` gốc
 
-`opm` load pack bằng `-e` (và `--no-extensions` để không trộn extension discovery của Pi). Muốn dùng pack với `pi` không qua wrapper, thêm path vào `extensions` trong settings hoặc:
+OPM là Pi package (`package.json` → `pi.extensions`). Cài vào CLI `pi` đã có (cùng cách với `omp` nếu binary đó vẫn là lệnh `install` của Pi):
 
 ```bash
-pi -e /abs/path/to/repo/opm/packs/verify/index.ts
+# Host trên PATH: pi, rồi omp, rồi ./pi-test.sh trong repo này
+./opm.sh attach
+
+# Chỉ định binary
+OPM_HOST_BIN=$(command -v pi) ./opm.sh attach
+OPM_HOST_BIN=$(command -v omp) ./opm.sh attach
+
+# Tương đương tay
+pi install /abs/path/to/repo/opm
+pi list
+pi --help    # phải thấy --plan và --sandbox
 ```
 
-Hoặc `pi install /path/to/package` nếu đóng gói đúng layout Pi package (xem `packages/coding-agent/docs/packages.md`). File `index.ts` lẻ không phải npm package.
+Ghi `packages` vào `~/.pi/agent/settings.json` (không copy source). `./opm-super.sh` vẫn spawn bằng `-e` và `--no-extensions` — không dùng package vừa cài; `attach` là cho lệnh `pi`/`omp` trần.
+
+Một file `index.ts` lẻ: `pi -e /abs/path/to/repo/opm/packs/verify/index.ts`.
 
 ## Bảo mật
 
