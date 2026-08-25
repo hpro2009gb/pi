@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -22,15 +22,35 @@ describe("OPM as a Pi package", () => {
 });
 
 describe("resolveHostBin", () => {
-	it("prefers OPM_HOST_BIN, then pi on PATH, then omp, then repo pi-test.sh", () => {
+	const dirs: string[] = [];
+
+	afterEach(() => {
+		for (const dir of dirs.splice(0)) {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("prefers OPM_HOST_BIN, then omp on PATH, then pi, then repo pi-test.sh", () => {
 		expect(resolveHostBin({ OPM_HOST_BIN: "/custom/pi" }, import.meta.url)).toEqual({
 			bin: "/custom/pi",
 			kind: "pi",
+		});
+		expect(resolveHostBin({ OPM_HOST_BIN: "/opt/omp" }, import.meta.url)).toEqual({
+			bin: "/opt/omp",
+			kind: "omp",
 		});
 		expect(resolveHostBin({ PATH: "/tmp/opm-empty-host-path" }, import.meta.url).bin.replaceAll("\\", "/")).toMatch(
 			/\/pi-test\.sh$/,
 		);
 		expect(resolveHostBin({ PATH: "/tmp/opm-empty-host-path" }, import.meta.url).kind).toBe("source");
+	});
+
+	it("prefers omp over pi when both exist on PATH", () => {
+		const dir = mkdtempSync(join(tmpdir(), "opm-host-bins-"));
+		dirs.push(dir);
+		writeFileSync(join(dir, "omp"), "");
+		writeFileSync(join(dir, "pi"), "");
+		expect(resolveHostBin({ PATH: dir }, import.meta.url)).toEqual({ bin: "omp", kind: "omp" });
 	});
 });
 

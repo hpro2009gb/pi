@@ -15,7 +15,10 @@ if (argv[0] === "init") {
 	const result = initOpm();
 	process.stdout.write(`OPM agent dir: ${result.agentDir}\n`);
 	process.stdout.write(`settings: ${result.settingsPath}\n`);
-	process.stdout.write(`auth: ${result.authLinked ? result.authPath : "(no ~/.pi/agent/auth.json found)"}\n`);
+	process.stdout.write(`auth: ${result.authLinked ? result.authPath : "(no host login; ~/.omp and ~/.pi auth.json empty or missing)"}\n`);
+	if (result.hostAuthPath) {
+		process.stdout.write(`host-auth: ${result.hostAuthPath}\n`);
+	}
 	process.exit(0);
 }
 if (argv[0] === "attach" || argv[0] === "attach-pi" || argv[0] === "install-to-pi") {

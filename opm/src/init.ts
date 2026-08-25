@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { discoverHostAuthPath, linkHostAuth } from "./host-auth.ts";
 import { packPath, PRESET_PACKS } from "./pack-registry.ts";
 
 export type InitOpmOptions = {
@@ -15,14 +16,11 @@ export type InitOpmResult = {
 	settingsPath: string;
 	authPath: string;
 	authLinked: boolean;
+	hostAuthPath?: string;
 };
 
 export function defaultOpmAgentDir(): string {
 	return join(homedir(), ".opm", "agent");
-}
-
-export function defaultPiAuthPath(): string {
-	return join(homedir(), ".pi", "agent", "auth.json");
 }
 
 function settingsDocument(packRoot: string | undefined): Record<string, unknown> {
@@ -61,12 +59,9 @@ export function initOpm(options: InitOpmOptions = {}): InitOpmResult {
 	}
 
 	const authPath = join(agentDir, "auth.json");
-	const piAuthPath = options.piAuthPath ?? defaultPiAuthPath();
-	let authLinked = existsSync(authPath);
-	if (!authLinked && existsSync(piAuthPath)) {
-		symlinkSync(piAuthPath, authPath);
-		authLinked = true;
-	}
+	const extra = options.piAuthPath ? [options.piAuthPath] : [];
+	const host = discoverHostAuthPath(process.env, homedir(), extra);
+	const authLinked = linkHostAuth(authPath, host);
 
-	return { created, agentDir, settingsPath, authPath, authLinked };
+	return { created, agentDir, settingsPath, authPath, authLinked, hostAuthPath: host };
 }

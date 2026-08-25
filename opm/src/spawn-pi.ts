@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultOpmAgentDir } from "./init.ts";
+import { ensureOpmHostAuth } from "./host-auth.ts";
 import type { LaunchPlan } from "./presets.ts";
 
 export function peelOpmCliFlags(argv: string[]): { dryRun: boolean; rest: string[] } {
@@ -115,6 +116,7 @@ export function spawnPi(
 	if (!env.PI_CODING_AGENT_DIR) {
 		env.PI_CODING_AGENT_DIR = defaultOpmAgentDir();
 	}
+	ensureOpmHostAuth(env.PI_CODING_AGENT_DIR, env);
 	const piBin = resolvePiBin(env, options?.fromFileUrl ?? import.meta.url);
 	if (!env.OPM_PI_BIN) {
 		env.OPM_PI_BIN = piBin;

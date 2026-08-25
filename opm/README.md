@@ -21,8 +21,14 @@ Cần Node >= 22.19. Từ root repo:
 ./opm-super.sh --help             # phải thấy --plan và --sandbox (pack đã load)
 
 # Model: TUI sẽ báo "No models available" nếu chưa login.
-# /login trong TUI, hoặc ghi key vào ~/.pi/agent/auth.json rồi:
+# Dùng login sẵn của omp/pi — không /login lại, không gửi prompt tốn token:
 ./opm.sh init
+./opm.sh attach                 # ưu tiên binary `omp` trên PATH
+./opm-super.sh --dry-run
+./opm-super.sh --help           # pack flags, không gọi model
+./opm.sh --list-models          # catalog local; không completion
+# Đừng dùng -p "..." để smoke test.
+
 # Lần đầu trong repo, Pi hỏi Trust project folder; --approve bỏ dialog đó.
 
 
@@ -77,7 +83,7 @@ OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --profile custom --with verify,ask
 
 `OPM_PI_FROM_SOURCE=1` dùng `./pi-test.sh`. Muốn binary khác: `OPM_PI_BIN=/path/to/pi`. Nếu `pi` không có trên PATH, `opm` tự dùng `./pi-test.sh` khi chạy từ repo này.
 
-`opm` set `PI_CODING_AGENT_DIR` mặc định thành `~/.opm/agent`. Auth: nếu có `~/.pi/agent/auth.json`, `opm init` tạo symlink `~/.opm/agent/auth.json` trỏ tới file đó (không copy secret vào git).
+`opm` set `PI_CODING_AGENT_DIR` mặc định thành `~/.opm/agent`. Auth: symlink tới login host nếu file đó có credential (không phải `{}`). Thứ tự: `OPM_AUTH_JSON`, `OMP_CODING_AGENT_DIR/auth.json`, `~/.omp/agent/auth.json`, `~/.pi/agent/auth.json`. `opm init` / mỗi lần spawn sẽ thay `{}` rỗng bằng symlink — không copy secret. Smoke test: `--dry-run`, `--help`, `--list-models`. Không `-p` (tốn token).
 
 ## Tích hợp này là gì
 
@@ -171,12 +177,12 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 OPM là Pi package (`package.json` → `pi.extensions`). Cài vào CLI `pi` đã có (cùng cách với `omp` nếu binary đó vẫn là lệnh `install` của Pi):
 
 ```bash
-# Host trên PATH: pi, rồi omp, rồi ./pi-test.sh trong repo này
+# Host trên PATH: omp trước, rồi pi, rồi ./pi-test.sh trong repo này
 ./opm.sh attach
 
 # Chỉ định binary
-OPM_HOST_BIN=$(command -v pi) ./opm.sh attach
 OPM_HOST_BIN=$(command -v omp) ./opm.sh attach
+OPM_HOST_BIN=$(command -v pi) ./opm.sh attach
 
 # Tương đương tay
 pi install /abs/path/to/repo/opm

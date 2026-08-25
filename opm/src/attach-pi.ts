@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { basename } from "node:path";
 import { opmRoot } from "./pack-registry.ts";
 import { commandOnPath, resolvePiBin } from "./spawn-pi.ts";
 
@@ -9,16 +10,27 @@ export type HostBin = {
 	kind: HostKind;
 };
 
+function hostKindFromBin(bin: string): HostKind {
+	const base = basename(bin).toLowerCase();
+	if (base === "omp" || base.startsWith("omp.")) {
+		return "omp";
+	}
+	if (base === "pi-test.sh" || base === "pi-test") {
+		return "source";
+	}
+	return "pi";
+}
+
 export function resolveHostBin(env: NodeJS.ProcessEnv = process.env, fromFileUrl: string = import.meta.url): HostBin {
 	if (env.OPM_HOST_BIN) {
-		return { bin: env.OPM_HOST_BIN, kind: "pi" };
+		return { bin: env.OPM_HOST_BIN, kind: hostKindFromBin(env.OPM_HOST_BIN) };
 	}
 	const pathEnv = env.PATH ?? process.env.PATH ?? "";
-	if (commandOnPath("pi", pathEnv)) {
-		return { bin: "pi", kind: "pi" };
-	}
 	if (commandOnPath("omp", pathEnv)) {
 		return { bin: "omp", kind: "omp" };
+	}
+	if (commandOnPath("pi", pathEnv)) {
+		return { bin: "pi", kind: "pi" };
 	}
 	return { bin: resolvePiBin({ ...env, OPM_PI_FROM_SOURCE: "1" }, fromFileUrl), kind: "source" };
 }
