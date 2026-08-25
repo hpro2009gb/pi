@@ -29,30 +29,52 @@ OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts --preset pi -p "list files"
 
 # Init thư mục config riêng (không ghi đè ~/.pi/agent/settings.json)
 OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts init
+
+# Bảng chọn preset/pack + nguồn triết lý
+OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose
 ```
 
 `OPM_PI_FROM_SOURCE=1` dùng `./pi-test.sh`. Muốn binary khác: `OPM_PI_BIN=/path/to/pi`.
 
 `opm` set `PI_CODING_AGENT_DIR` mặc định thành `~/.opm/agent`. Auth: nếu có `~/.pi/agent/auth.json`, `opm init` tạo symlink `~/.opm/agent/auth.json` trỏ tới file đó (không copy secret vào git).
 
-## Preset
+## Tích hợp này là gì
 
-| Preset | Packs | Model thấy |
-| --- | --- | --- |
-| `pi` | không | `read`, `bash`, `edit`, `write` (edit gốc của Pi) |
-| `opm-verify` (mặc định) | verify, hashline, ask, lsp | bốn tool trên + `ask` + `lsp`; edit/read hashline |
-| `opm-plan` | opm-verify + plan | write/edit tắt đến khi accept |
-| `opm-full` | thêm sandbox, task, browser | packs đó chưa có trong v1; spawn bỏ qua file thiếu |
+| Câu hỏi | Trả lời |
+| --- | --- |
+| Tích hợp này là gì? | Wrapper CLI quanh Pi: engine vẫn là Pi (agent loop, TUI, session, `read`/`bash`/`edit`/`write`). Từng năng lực thêm là một pack (extension Pi). Preset bật/tắt pack, không sửa `packages/coding-agent`. |
+| Đặc biệt chỗ nào? | Không fork `agent-loop` như Oh My Pi (`omp`). Pack tháo được (`--preset pi` = Pi gốc). Mặc định `opm-verify`: evidence, diff nhỏ, không commit hộ. Quyền vẫn là user — sandbox là phase sau. |
+| Học từ triết lý agent nào? | Nền: triết lý Pi (nhẹ, 4 tool, không nhét plan/MCP/todo vào core). Học chọn lọc: omp (hashline, LSP), Claude Code (hỏi có cấu trúc, plan mode), Cline (plan rồi mới act), Codex (sandbox — chưa ship). Không lấy 31 tool, `computer` desktop, MCP-in-core, auto-commit, auto `learn`. |
+
+In lại bảng này: `OPM_PI_FROM_SOURCE=1 node opm/src/cli.ts choose`.
+
+## Bảng chọn preset
+
+| Chọn preset | Dùng khi | Packs | Tính năng | Đặc biệt | Học từ |
+| --- | --- | --- | --- | --- | --- |
+| `pi` | Muốn đúng Pi gốc, hoặc đang debug pack | (không) | Không load pack. Model chỉ thấy `read`, `bash`, `edit`, `write` (edit `oldText` của Pi). | Baseline. Dùng để so sánh: mọi thứ khác là pack, không phải core. | Pi — harness nhỏ, user-permission, không permission-popup hay plan mode trong core. |
+| `opm-verify` (mặc định) | Làm việc hằng ngày | verify, hashline, ask, lsp | Bốn tool Pi + `ask` + `lsp`; edit/read hashline. | Chặn `git commit`/`push`/`reset --hard` trừ khi user hỏi; hỏi select/confirm; LSP TS/JS nếu có server. | Kỷ luật OPM (evidence, không commit lén) + omp (hashline/LSP) + Claude Code / Pi `question.ts` (ask). |
+| `opm-plan` | Cần thiết kế trước, chưa cho agent sửa file | opm-verify + plan | `/plan`; write/edit tắt đến khi accept. | Bash allowlist; confirm mới được viết; Cancel giữ plan mode; không tự execute. | Claude Code plan, Cline plan-then-act, Pi `plan-mode`. Khác example Pi: không auto-run. |
+| `opm-full` (phase 2) | Khi pack phase 2 đã có trên máy | + sandbox, task, browser | Union; file thiếu thì skip. | v1 chưa ship 3 pack sau. Đừng chọn nếu cần sandbox/subagent/browser ngay. | Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp. |
 
 Tắt hashline: `OPM_HASHLINE=0`.
 
-## Packs v1
+## Bảng chọn pack
 
-- **verify** — evidence, diff nhỏ, không `git commit` / `git push` / `git reset --hard` trừ khi user hỏi trong lượt (ví dụ “hay commit giup minh”).
-- **hashline** — `read` text có header `<!-- hashline -->` và prefix `HHHHHHHH|`; `edit` theo hash; hash stale thì fail, không ghi file dở.
-- **ask** — hỏi user có cấu trúc (`select` / `confirm` / `input`). Không có todo tool.
-- **plan** — `/plan`; bash allowlist; confirm “Accept plan and enable writes?”; Cancel vẫn ở plan mode. Không tự execute.
-- **lsp** — TS/JS qua `typescript-language-server --stdio` nếu có trên PATH. Ngôn ngữ khác: `unsupported in v1`. Thiếu server: báo lỗi, không crash Pi.
+| Chọn pack | v1? | Tính năng | Đặc biệt | Học từ |
+| --- | --- | --- | --- | --- |
+| `verify` | có | Prompt evidence (diff nhỏ, bug cần repro, UI cần check UI) và chặn git write nếu user không hỏi. | Không auto-commit như omp. Nhận cả câu tiếng Việt kiểu “hay commit giup minh”. | Triết lý OPM: evidence trước, không commit hộ. Đối lập omp commit-by-default. |
+| `hashline` | có | `read` text có `<!-- hashline -->` và prefix `HHHHHHHH|`; `edit` theo hash SHA-256 8 hex. | Hash stale → fail, không ghi file dở. Tắt: `OPM_HASHLINE=0`. Không đổi binary/ảnh. | omp (Oh My Pi) hashline; gắn bằng override tool Pi, không nhét vào core. |
+| `ask` | có | Tool `ask`: ≥2 options → select, yes/no → confirm, còn lại → input. Sequential. | Không todo tool. Non-TUI trả lỗi, không giả câu trả lời. | Claude Code AskUserQuestion + Pi `question.ts`. |
+| `plan` | có | `/plan` (và `--plan`): lọc tool + bash allowlist; confirm mới bật write. | Không auto-execute. Cancel = vẫn plan mode. | Claude Code plan, Cline plan/act, Pi `plan-mode` example. |
+| `lsp` | có | Tool `lsp` + diagnostics sau `edit`/`write` TS/JS. | Thiếu `typescript-language-server`: báo lỗi, không crash. Lang khác: `unsupported in v1`. | omp LSP + hook `tool_result` của Pi. |
+| `sandbox` | chưa | Policy path/net; profile off / workspace / container. | Default `off` (giữ Pi trên repo tin). | Codex workspace sandbox + Pi sandbox/gondolin. |
+| `task` | chưa | Subagent context riêng. | Worker inherit verify; scout read-only (khi làm). | Pi `subagent` example + omp `task`. |
+| `browser` | chưa | UI evidence. | Không thêm `computer` desktop của omp. | Học browser; bỏ desktop control. |
+
+## Không lấy từ agent khác
+
+31-tool dump, `computer` desktop, MCP trong core Pi, `omp commit` mặc định, auto `learn` skills, `/collab`.
 
 ## Gắn pack vào `pi` gốc
 

@@ -1,9 +1,14 @@
 #!/usr/bin/env node
+import { formatChooser } from "./catalog.ts";
 import { initOpm } from "./init.ts";
 import { resolveLaunchPlan } from "./presets.ts";
 import { spawnPi } from "./spawn-pi.ts";
 
 const argv = process.argv.slice(2);
+if (argv[0] === "choose" || argv[0] === "--choose") {
+	process.stdout.write(formatChooser());
+	process.exit(0);
+}
 if (argv[0] === "init") {
 	const result = initOpm();
 	process.stdout.write(`OPM agent dir: ${result.agentDir}\n`);
