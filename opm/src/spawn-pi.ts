@@ -5,6 +5,43 @@ import { fileURLToPath } from "node:url";
 import { defaultOpmAgentDir } from "./init.ts";
 import type { LaunchPlan } from "./presets.ts";
 
+export function peelOpmCliFlags(argv: string[]): { dryRun: boolean; rest: string[] } {
+	const rest: string[] = [];
+	let dryRun = false;
+	for (const arg of argv) {
+		if (arg === "--dry-run") {
+			dryRun = true;
+			continue;
+		}
+		rest.push(arg);
+	}
+	return { dryRun, rest };
+}
+
+export function formatLaunchBanner(plan: LaunchPlan): string {
+	const packs = plan.packs.length > 0 ? plan.packs.join(", ") : "(no packs)";
+	return `opm ${plan.preset}: ${packs}\n`;
+}
+
+export function formatDryRun(plan: LaunchPlan, piBin: string): string {
+	const extra = plan.extraArgs.length > 0 ? plan.extraArgs.join(" ") : "(none)";
+	const packs = plan.packs.length > 0 ? plan.packs.join(", ") : "(none)";
+	const extensions =
+		plan.extensionPaths.length > 0
+			? plan.extensionPaths.map((path) => `  ${path}`).join("\n")
+			: "  (none)";
+	return [
+		`preset: ${plan.preset}`,
+		`packs: ${packs}`,
+		`pi: ${piBin}`,
+		`extraArgs: ${extra}`,
+		"extensions:",
+		extensions,
+		"",
+	].join("\n");
+}
+
+
 export function findRepoRoot(startDir: string): string {
 	let dir = startDir;
 	while (true) {
