@@ -1,4 +1,6 @@
-export type PresetName = "pi" | "opm-verify" | "opm-plan" | "opm-full";
+import { extensionPathsForPreset, type PresetName } from "./pack-registry.ts";
+
+export type { PresetName };
 
 export type LaunchPlan = {
 	preset: PresetName;
@@ -24,5 +26,5 @@ export function resolveLaunchPlan(argv: string[]): LaunchPlan {
 		}
 		extraArgs.push(arg);
 	}
-	return { preset, extraArgs, extensionPaths: [] };
+	return { preset, extraArgs, extensionPaths: extensionPathsForPreset(preset) };
 }
