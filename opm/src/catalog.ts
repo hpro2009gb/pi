@@ -68,22 +68,23 @@ export const PRESET_CATALOG: Record<PresetName, PresetCatalogEntry> = {
 		available: true,
 	},
 	"opm-full": {
-		chooseWhen: "Muốn đủ pack: sandbox + task + browser",
+		chooseWhen: "Muốn đủ pack: sandbox + task + browser + ttsr + memory",
 		packs: PRESET_PACKS["opm-full"],
-		what: "`opm-plan` cộng sandbox + task + browser.",
+		what: "`opm-plan` cộng sandbox + task + browser + ttsr + memory.",
 		special:
-			"Sandbox mặc định off trừ khi `--sandbox workspace|container`. Browser: snapshot/screenshot Chrome headless, không `computer` desktop.",
-		learnedFrom: "Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence. Không lấy `computer` desktop của omp.",
+			"Sandbox mặc định off trừ khi `--sandbox workspace|container`. Browser: snapshot/screenshot Chrome headless, không `computer` desktop. TTSR abort+followUp; MEMORY.md user-reviewed.",
+		learnedFrom:
+			"Codex + Pi sandbox; Pi subagent / omp `task`; browser evidence; TTSR-lite; project memory. Không lấy `computer` desktop của omp.",
 		available: true,
 	},
 	"pi-super": {
 		chooseWhen: "Daily driver nghiên cứu của OPM: đủ kit v1, không khóa plan lúc start",
 		packs: PRESET_PACKS["pi-super"],
-		what: "Pi + verify + hashline + ask + plan + lsp + sandbox + task + browser. Combo này không clone một agent: Claude không có hashline; Cline không hashline/lsp; omp auto-commit; Codex không plan/ask.",
+		what: "Pi + verify + hashline + ask + plan + lsp + sandbox + task + browser + ttsr + memory. Combo này không clone một agent: Claude không có hashline; Cline không hashline/lsp; omp auto-commit; Codex không plan/ask.",
 		special:
-			"Không inject `--plan`. Sandbox mặc định off. Dùng `/plan` khi cần. Browser chỉ snapshot/screenshot. Có thể mạnh hơn clone vì ghép vài vũ khí mà từng agent kia không có cùng lúc, vẫn giữ Pi core.",
+			"Không inject `--plan`. Sandbox mặc định off. Dùng `/plan` khi cần. Browser chỉ snapshot/screenshot. TTSR mặc định on (tắt: `--without ttsr` hoặc `OPM_TTSR=0`). MEMORY.md user-reviewed (`OPM_MEMORY=0` để tắt). Có thể mạnh hơn clone vì ghép vài vũ khí mà từng agent kia không có cùng lúc, vẫn giữ Pi core.",
 		learnedFrom:
-			"Tổng hợp có chủ đích: Pi 4-tool + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan-then-act (opt-in) + Codex sandbox policy + UI evidence. Bỏ auto-commit, 31 tool, `computer`, MCP-in-core.",
+			"Tổng hợp có chủ đích: Pi 4-tool + OPM verify + omp hashline/lsp + Claude ask/plan + Cline plan-then-act (opt-in) + Codex sandbox policy + UI evidence + TTSR-lite + MEMORY.md. Bỏ auto-commit, 31 tool, `computer`, MCP-in-core, auto `learn`.",
 		available: true,
 	},
 	custom: {
@@ -147,6 +148,20 @@ export const PACK_CATALOG: Record<PackId, PackCatalogEntry> = {
 		special:
 			"Cần chrome/chromium trên PATH hoặc `OPM_CHROME_BIN`. Tắt mặc định trong `opm-verify` (`--with browser`). Không có tool `computer` (desktop OS).",
 		learnedFrom: "Các agent UI-verify (omp browser/computer — chỉ học browser CLI, bỏ desktop).",
+		available: true,
+	},
+	ttsr: {
+		what: "TTSR-lite: khi assistant nói sẽ commit / skip tests / auto-learn, abort stream rồi followUp reminder.",
+		special:
+			"Mặc định off trong `opm-verify`, on trong `opm-full` / `pi-super`. Tắt: `--without ttsr` hoặc `OPM_TTSR=0`. Abort giữa stream + followUp có thể loop hoặc làm mất tool call trên một số model — đừng bật nếu model đang tool-call dở.",
+		learnedFrom: "Kỷ luật OPM (không commit/learn lén). Không phải TTSR đầy đủ (không retry hook upstream).",
+		available: true,
+	},
+	memory: {
+		what: "`MEMORY.md` trong project: skill nếu có YAML `description:`, không thì nhét vào system prompt. `/memory` và `/memory init`.",
+		special:
+			"User-reviewed. Không auto-write learnings. Walk lên git root, dừng ở `.git`. Mặc định off trong `opm-verify`. Tắt: `--without memory` hoặc `OPM_MEMORY=0`.",
+		learnedFrom: "Project memory kiểu skill; đối lập omp auto `learn`.",
 		available: true,
 	},
 };
