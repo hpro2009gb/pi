@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultOpmAgentDir } from "./init.ts";
 import type { LaunchPlan } from "./presets.ts";
@@ -19,15 +19,35 @@ export function findRepoRoot(startDir: string): string {
 	}
 }
 
+export function commandOnPath(command: string, pathEnv: string): boolean {
+	if (command.includes("/") || command.includes("\\")) {
+		return existsSync(command);
+	}
+	for (const dir of pathEnv.split(delimiter)) {
+		if (dir.length > 0 && existsSync(join(dir, command))) {
+			return true;
+		}
+	}
+	return false;
+}
+
 export function resolvePiBin(env: NodeJS.ProcessEnv, fromFileUrl: string): string {
 	if (env.OPM_PI_BIN) {
 		return env.OPM_PI_BIN;
 	}
+	const startDir = dirname(fileURLToPath(fromFileUrl));
 	if (env.OPM_PI_FROM_SOURCE === "1") {
-		const startDir = dirname(fileURLToPath(fromFileUrl));
 		return join(findRepoRoot(startDir), "pi-test.sh");
 	}
-	return "pi";
+	const pathEnv = env.PATH ?? process.env.PATH ?? "";
+	if (commandOnPath("pi", pathEnv)) {
+		return "pi";
+	}
+	try {
+		return join(findRepoRoot(startDir), "pi-test.sh");
+	} catch {
+		throw new Error("pi not found on PATH. Set OPM_PI_BIN or OPM_PI_FROM_SOURCE=1 to use ./pi-test.sh");
+	}
 }
 
 export function extensionArgs(
@@ -59,6 +79,9 @@ export function spawnPi(
 		env.PI_CODING_AGENT_DIR = defaultOpmAgentDir();
 	}
 	const piBin = resolvePiBin(env, options?.fromFileUrl ?? import.meta.url);
+	if (!env.OPM_PI_BIN) {
+		env.OPM_PI_BIN = piBin;
+	}
 	const { args: eArgs, warnings } = extensionArgs(plan.extensionPaths);
 	for (const warning of warnings) {
 		process.stderr.write(`${warning}\n`);
