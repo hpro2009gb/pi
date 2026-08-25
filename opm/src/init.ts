@@ -1,13 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { discoverHostAuthPath, linkHostAuth } from "./host-auth.ts";
+import { discoverHostAuthPath, bindHostAuth } from "./host-auth.ts";
 import { packPath, PRESET_PACKS } from "./pack-registry.ts";
 
 export type InitOpmOptions = {
 	opmAgentDir?: string;
 	packRoot?: string;
 	piAuthPath?: string;
+	shareAuth?: boolean;
 };
 
 export type InitOpmResult = {
@@ -16,6 +17,7 @@ export type InitOpmResult = {
 	settingsPath: string;
 	authPath: string;
 	authLinked: boolean;
+	authMode: "symlink" | "copy";
 	hostAuthPath?: string;
 };
 
@@ -61,7 +63,8 @@ export function initOpm(options: InitOpmOptions = {}): InitOpmResult {
 	const authPath = join(agentDir, "auth.json");
 	const extra = options.piAuthPath ? [options.piAuthPath] : [];
 	const host = discoverHostAuthPath(process.env, homedir(), extra);
-	const authLinked = linkHostAuth(authPath, host);
+	const authMode = options.shareAuth === false ? "copy" : "symlink";
+	const authLinked = bindHostAuth(authPath, host, authMode);
 
-	return { created, agentDir, settingsPath, authPath, authLinked, hostAuthPath: host };
+	return { created, agentDir, settingsPath, authPath, authLinked, authMode, hostAuthPath: host };
 }

@@ -3,6 +3,7 @@ import { attachOpmToHost, formatAttachResult } from "./attach-pi.ts";
 import { formatChooser } from "./catalog.ts";
 import { loadCustomPacks, resolveCustomizeDir, runCustomize } from "./customize.ts";
 import { initOpm } from "./init.ts";
+import { formatInstallCliResult, installCli, parseInstallCliArgs } from "./install-cli.ts";
 import { resolveLaunchPlan } from "./presets.ts";
 import { formatDryRun, formatLaunchBanner, peelOpmCliFlags, resolvePiBin, spawnPi } from "./spawn-pi.ts";
 
@@ -20,6 +21,18 @@ if (argv[0] === "init") {
 		process.stdout.write(`host-auth: ${result.hostAuthPath}\n`);
 	}
 	process.exit(0);
+}
+if (argv[0] === "install-cli" || argv[0] === "install-parallel") {
+	try {
+		const flags = parseInstallCliArgs(argv.slice(1));
+		const result = installCli(flags);
+		process.stdout.write(formatInstallCliResult(result));
+		process.exit(0);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		process.stderr.write(`${message}\n`);
+		process.exit(1);
+	}
 }
 if (argv[0] === "attach" || argv[0] === "attach-pi" || argv[0] === "install-to-pi") {
 	const result = attachOpmToHost({ args: argv.slice(1) });

@@ -172,7 +172,29 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 
 31-tool dump, `computer` desktop, MCP trong core Pi, `omp commit` mặc định, auto `learn` skills, `/collab`.
 
+## Cài thành lệnh `opm` song song với `omp` (data riêng)
+
+Không ghi đè `omp`/`pi`. Session/settings nằm `~/.opm/agent`, không phải `~/.pi/agent`. Auth **copy** một lần (không symlink) — `/login` trong OPM không ghi auth của omp. Đừng `attach`.
+
+Từ root repo (worktree cũng được):
+
+```bash
+./opm.sh install-cli
+# wrapper: ~/.local/bin/opm
+# cần ~/.local/bin trong PATH
+
+opm --help                 # Super Pi flags; không gọi model
+opm --list-models
+opm                        # TUI preset pi-super, data ~/.opm/agent
+opm --preset opm-verify    # preset khác, vẫn dir riêng
+```
+
+`--share-auth` nếu muốn symlink login (chung credential, `/login` ghi cả hai). `--bin-dir /path` nếu không dùng `~/.local/bin`. `--force` nếu đã có file `opm` không phải wrapper này.
+
+Gỡ: xóa `~/.local/bin/opm`. Data còn ở `~/.opm/agent` cho đến khi bạn xóa tay.
+
 ## Gắn pack vào `pi` gốc
+
 
 OPM là Pi package (`package.json` → `pi.extensions`). Cài vào CLI `pi` đã có (cùng cách với `omp` nếu binary đó vẫn là lệnh `install` của Pi):
 

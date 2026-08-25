@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readFileSync, readlinkSync, symlinkSync, unlinkSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, lstatSync, readFileSync, readlinkSync, symlinkSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -81,10 +81,51 @@ export function linkHostAuth(dest: string, host: string | undefined): boolean {
 	return isUsableAuthFile(dest);
 }
 
+/** Copy host login into dest. Independent file so /login in OPM does not write omp/pi auth. */
+export function copyHostAuth(dest: string, host: string | undefined): boolean {
+	if (!host || !isUsableAuthFile(host) || dest === host) {
+		return isUsableAuthFile(dest);
+	}
+	if (isUsableAuthFile(dest)) {
+		return true;
+	}
+	if (existsSync(dest)) {
+		unlinkSync(dest);
+	}
+	copyFileSync(host, dest);
+	chmodSync(dest, 0o600);
+	return true;
+}
+
+export function bindHostAuth(
+	dest: string,
+	host: string | undefined,
+	mode: "symlink" | "copy",
+): boolean {
+	if (mode === "copy") {
+		return copyHostAuth(dest, host);
+	}
+	return linkHostAuth(dest, host);
+}
+
+export function authBindModeFromEnv(env: NodeJS.ProcessEnv): "symlink" | "copy" | "none" {
+	if (env.OPM_AUTH_SHARE === "0") {
+		return "copy";
+	}
+	if (env.OPM_AUTH_SHARE === "none") {
+		return "none";
+	}
+	return "symlink";
+}
+
 export function ensureOpmHostAuth(
 	agentDir: string,
 	env: NodeJS.ProcessEnv = process.env,
 	extra: string[] = [],
 ): boolean {
-	return linkHostAuth(join(agentDir, "auth.json"), discoverHostAuthPath(env, homedir(), extra));
+	const mode = authBindModeFromEnv(env);
+	if (mode === "none") {
+		return isUsableAuthFile(join(agentDir, "auth.json"));
+	}
+	return bindHostAuth(join(agentDir, "auth.json"), discoverHostAuthPath(env, homedir(), extra), mode);
 }
