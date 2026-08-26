@@ -172,6 +172,24 @@ Không biến Pi thành agent kia. Mỗi dòng là gợi ý `Pi + packs`. Cột 
 
 31-tool dump, `computer` desktop, MCP trong core Pi, `omp commit` mặc định, auto `learn` skills, `/collab`.
 
+## Chia sẻ: mặc định chỉ mình dùng
+
+Pack OPM **không** tự thành sản phẩm công khai. Push GitHub / PR / `attach` vào `omp` chỉ khi bạn nói rõ (ví dụ: "chia sẻ", "push", "mở PR").
+
+| Việc | Có phải chia sẻ? |
+| --- | --- |
+| `./opm-super.sh` hoặc `opm install-cli` trên máy bạn | Không. Chỉ máy đó. |
+| `git commit` local | Không. Chỉ đĩa bạn. |
+| `git push` / mở PR | Có. Ai xem được repo thì xem được code. |
+| `./opm.sh attach` | Có, với `omp`/`pi` trên máy đó (settings host). |
+| `npm publish` | Có, mọi người `npm i`. |
+
+Dùng một mình: `./opm.sh install-cli` rồi `opm`. Đừng merge PR, đừng `attach`.
+
+Khi muốn chia sẻ **một** tính năng: nói rõ pack/commit, ví dụ `chia sẻ pack memory, mở PR`. Agent không được gom pack khác.
+
+Nhánh GitHub đã push trước đó vẫn public cho đến khi bạn đóng PR / xóa nhánh. Nói `đóng PR` nếu muốn gỡ listing.
+
 ## Cài thành lệnh `opm` song song với `omp` (data riêng)
 
 Không ghi đè `omp`/`pi`. Session/settings nằm `~/.opm/agent`, không phải `~/.pi/agent`. Auth **copy** một lần (không symlink) — `/login` trong OPM không ghi auth của omp. Đừng `attach`.

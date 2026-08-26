@@ -164,6 +164,10 @@ Attribution:
 
 5. **If CI publish or announcement fails**: inspect the failed job. The publish helper is idempotent and skips package versions already present on npm; the announcement job rechecks availability before updating the R2 marker. Rerun the failed job or workflow after fixing CI or transient npm issues. Do not rerun `npm run release:patch` or `npm run release:minor` for the same version.
 
+## OPM: private by default
+
+Work under `opm/` is for the owner’s machine unless they explicitly allow sharing. Do not `git push`, create, or update GitHub PRs, issues, or comments for OPM work unless the user says to share (examples: "chia sẻ", "share", "push", "mở PR"). `install-cli` / `./opm-super.sh` is local use. Never overwrite host `omp` or `pi` binaries. Never `./opm.sh attach` unless they ask.
+
 ## User Override
 
 If the user's instructions conflict with any rule in this document, ask for explicit confirmation before overriding. Only then execute their instructions.
