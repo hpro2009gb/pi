@@ -4,7 +4,7 @@ OPM features are **private by default**. The owner uses them locally (`./opm.sh`
 
 ## Do not share unless asked
 
-Do not `git push`, open/update PRs, post issue/PR comments, or `npm publish` for OPM unless the user explicitly allows it (e.g. "chia sẻ pack memory", "push", "mở PR").
+Do not `git push`, open/update PRs, post issue/PR comments, or `npm publish` for OPM unless the user explicitly allows it (e.g. "chia sẻ pack memory", "push", "mở PR"). `.husky/pre-push` blocks `git push` unless `PI_ALLOW_GITHUB_SHARE=1`.
 
 Local `git commit` is OK when they ask to commit, or when they asked for the change and want it saved on disk. Push is the share step.
 

@@ -280,6 +280,7 @@ export function formatInstallCliResult(result: InstallCliResult): string {
 	const cmd = result.wrapperPath.split(/[/\\]/).pop() ?? "opm";
 	const lines = [
 		`wrapper: ${result.wrapperPath}`,
+		`clone: ${result.repoRoot}`,
 		`agent dir: ${result.agentDir}`,
 		result.libDir ? `lib: ${result.libDir}` : undefined,
 		result.engineBin ? `engine: ${result.engineBin}` : undefined,

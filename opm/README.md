@@ -12,16 +12,26 @@
 
 ## Super Pi — app riêng (data không chung với omp/pi)
 
-Clone/worktree này là bản test. Cài thành lệnh `super-pi`; session nằm `~/.super-pi/agent`. Không ghi đè `omp`/`pi`.
+Clone = **thư mục đang mở chứa file `opm.sh`**. In ra:
 
 ```bash
-npm install --ignore-scripts          # một lần trong clone (engine)
-./opm.sh install-app                  # ~/.local/bin/super-pi + snapshot ~/.super-pi/lib
-# cần ~/.local/bin trong PATH
+pwd
+ls opm.sh     # phải thấy file này. Nếu không, bạn đang đứng nhầm chỗ.
+```
+
+Trên Cloud Agent máy ảo này, clone là `/workspace`. Đường dẫn `/path/to/pi-clone` **không tồn tại** (chỉ là ví dụ, không phải folder). Máy Windows/Mac của bạn không có `/workspace` — cài/test Super Pi trong terminal của agent đang mở repo này, hoặc copy cả thư mục có `opm.sh`.
+
+GitHub: **không push** cho đến khi chủ repo nói chia sẻ. `git push` bị hook chặn trừ `PI_ALLOW_GITHUB_SHARE=1`.
+
+```bash
+# đứng đúng clone (pwd in ra thư mục có opm.sh)
+npm install --ignore-scripts
+./opm.sh install-app
+# ~/.local/bin trong PATH
 
 super-pi --help
 super-pi --dry-run
-super-pi                              # TUI preset pi-super
+super-pi
 ```
 
 Đóng gói ra thư mục/tarball rồi cài bằng lệnh (máy này hoặc copy file đi):
