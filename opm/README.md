@@ -10,7 +10,33 @@
 | `opm` | Sản phẩm này (wrapper + packs trong repo) |
 | `omp` | Oh My Pi (can1357). **Không** phải dependency. Không copy source omp |
 
-## Chạy từ repo này
+## Super Pi — app riêng (data không chung với omp/pi)
+
+Clone/worktree này là bản test. Cài thành lệnh `super-pi`; session nằm `~/.super-pi/agent`. Không ghi đè `omp`/`pi`.
+
+```bash
+npm install --ignore-scripts          # một lần trong clone (engine)
+./opm.sh install-app                  # ~/.local/bin/super-pi + snapshot ~/.super-pi/lib
+# cần ~/.local/bin trong PATH
+
+super-pi --help
+super-pi --dry-run
+super-pi                              # TUI preset pi-super
+```
+
+Đóng gói ra thư mục/tarball rồi cài bằng lệnh (máy này hoặc copy file đi):
+
+```bash
+./opm.sh pack --out /tmp/super-pi     # /tmp/super-pi + /tmp/super-pi.tgz
+bash /tmp/super-pi/install.sh         # cùng kết quả: lệnh super-pi, data ~/.super-pi
+```
+
+Engine vẫn là `pi-test.sh` của clone (ghi trong `pack.json`). `omp` chạy song song được vì khác command và khác `PI_CODING_AGENT_DIR`. Cùng một working tree thì hai agent vẫn có thể sửa chung file project — muốn tách file thì dùng worktree/clone riêng cho project.
+
+Gỡ: xóa `~/.local/bin/super-pi` và (nếu muốn) `~/.super-pi`. Đừng `./opm.sh attach`.
+
+## Chạy từ repo này (không cài lệnh)
+
 
 Cần Node >= 22.19. Từ root repo:
 

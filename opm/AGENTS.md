@@ -1,6 +1,6 @@
 # OPM agent rules
 
-OPM features are **private by default**. The owner uses them locally (`./opm.sh`, `./opm-super.sh`, `opm install-cli`). Sharing to GitHub or other people is opt-in.
+OPM features are **private by default**. The owner uses them locally (`./opm.sh`, `./opm-super.sh`, `./opm.sh install-app`, `./opm.sh pack`). Sharing to GitHub or other people is opt-in.
 
 ## Do not share unless asked
 
@@ -11,12 +11,12 @@ Local `git commit` is OK when they ask to commit, or when they asked for the cha
 ## Local use (not sharing)
 
 ```bash
-./opm.sh install-cli
-opm --help
-opm
+./opm.sh install-app
+super-pi --help
+super-pi
 ```
 
-Do not `./opm.sh attach` (writes host `omp`/`pi` settings). Do not install a wrapper named `pi` or `omp`.
+`./opm.sh pack --out /tmp/super-pi` then `bash /tmp/super-pi/install.sh` is the same install from a snapshot. Do not `./opm.sh attach` (writes host `omp`/`pi` settings). Do not install a wrapper named `pi` or `omp`.
 
 ## When they allow sharing
 

@@ -166,7 +166,7 @@ Attribution:
 
 ## OPM: private by default
 
-Work under `opm/` is for the owner’s machine unless they explicitly allow sharing. Do not `git push`, create, or update GitHub PRs, issues, or comments for OPM work unless the user says to share (examples: "chia sẻ", "share", "push", "mở PR"). `install-cli` / `./opm-super.sh` is local use. Never overwrite host `omp` or `pi` binaries. Never `./opm.sh attach` unless they ask.
+Work under `opm/` is for the owner’s machine unless they explicitly allow sharing. Do not `git push`, create, or update GitHub PRs, issues, or comments for OPM work unless the user says to share (examples: "chia sẻ", "share", "push", "mở PR"). `install-app` / `pack` / `./opm-super.sh` is local use. Never overwrite host `omp` or `pi` binaries. Never `./opm.sh attach` unless they ask.
 
 ## User Override
 

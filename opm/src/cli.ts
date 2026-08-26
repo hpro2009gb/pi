@@ -3,7 +3,15 @@ import { attachOpmToHost, formatAttachResult } from "./attach-pi.ts";
 import { formatChooser } from "./catalog.ts";
 import { loadCustomPacks, resolveCustomizeDir, runCustomize } from "./customize.ts";
 import { initOpm } from "./init.ts";
-import { formatInstallCliResult, installCli, parseInstallCliArgs } from "./install-cli.ts";
+import {
+	formatInstallCliResult,
+	installApp,
+	installCli,
+	parseInstallCliArgs,
+	resolveInstallWrapperName,
+} from "./install-cli.ts";
+import { defaultPackOutDir, formatPackResult, packOpm, parsePackArgs } from "./pack.ts";
+import { opmRoot } from "./pack-registry.ts";
 import { resolveLaunchPlan } from "./presets.ts";
 import { formatDryRun, formatLaunchBanner, peelOpmCliFlags, resolvePiBin, spawnPi } from "./spawn-pi.ts";
 
@@ -22,10 +30,45 @@ if (argv[0] === "init") {
 	}
 	process.exit(0);
 }
+if (argv[0] === "pack") {
+	try {
+		const flags = parsePackArgs(argv.slice(1));
+		const outDir = flags.outDir ?? defaultPackOutDir();
+		const result = packOpm({
+			sourceRoot: opmRoot(),
+			outDir,
+			tarball: flags.tarball,
+		});
+		process.stdout.write(formatPackResult(result));
+		process.exit(0);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		process.stderr.write(`${message}\n`);
+		process.exit(1);
+	}
+}
+if (argv[0] === "install-app" || argv[0] === "install-super-pi") {
+	try {
+		const flags = parseInstallCliArgs(argv.slice(1));
+		const result = installApp({
+			...flags,
+			wrapperName: resolveInstallWrapperName(argv[0], flags),
+		});
+		process.stdout.write(formatInstallCliResult(result));
+		process.exit(0);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		process.stderr.write(`${message}\n`);
+		process.exit(1);
+	}
+}
 if (argv[0] === "install-cli" || argv[0] === "install-parallel") {
 	try {
 		const flags = parseInstallCliArgs(argv.slice(1));
-		const result = installCli(flags);
+		const result = installCli({
+			...flags,
+			wrapperName: resolveInstallWrapperName(argv[0], flags),
+		});
 		process.stdout.write(formatInstallCliResult(result));
 		process.exit(0);
 	} catch (error) {
